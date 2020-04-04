@@ -6,28 +6,27 @@
 --- uses GPIO3 (RX on Esp8266) GPIO2 for other boards
 */
 
-//#define FLASH_SELECT
-#define EXTERNAL_SELECT
+#define FLASH_SELECT
+//#define EXTERNAL_SELECT
 
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 #include <UIPEthernet.h>
-#ifdef FLASH_SELECT 
-  #include <EasyButton.h>
-  #include <EEPROM.h>
-  EasyButton m_button(0);
-  uint8_t ledmod = 112;
+  #ifdef FLASH_SELECT 
+    #include <EasyButton.h>
+    #include <EEPROM.h>
+    EasyButton m_button(0);
+    uint8_t ledmod = 112;
   #endif
 
-
 //Button Settings
-#define MODE_PIN 5 //pin for changing mode (LOW - WIFI, HIGH - LAN)
+#define MODE_PIN 5 //pin for changing mode (LOW - WIFI, HIGH - LAN) with external button
 #define STATUS_WIFI 0 
 #define STATUS_LAN 1
-#define STATUS_LED 2
-uint8_t mode; //contains status, if is WIFI or LAN choosed
+#define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
+uint8_t mode; // WIFI or LAN mode variable (0 - WIFI, 1 - LAN)
 
 
 // ARTNET CODES
@@ -38,62 +37,51 @@ uint8_t mode; //contains status, if is WIFI or LAN choosed
 #define ARTNET_HEADER 17
 
 //Ethernet Settings
-const byte mac[] = {  
-  0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x53 }; // Last same as ip **************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x55 }; // Last same as ip **************************
 
 //Wifi Settings
-IPAddress ip(2, 0, 0, 55); //IP ADDRESS NODEMCU ****************
-IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА ****************
-IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
-const char* ssid = "ANetEsp"; //SSID ****************
-const char* password = "ktulhu_1234"; //PASSW ****************
 const uint8_t startUniverse = 55; //****************************
+IPAddress ip(2, 0, 0, 55); //IP ADDRESS NODEMCU ****************
+IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
+IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
+const char* ssid = "ANetEsp"; //SSID 
+const char* password = "ktulhu_1234"; //PASSW 
 
 //UDP Settings
 WiFiUDP wifiUdp;
 EthernetUDP ethernetUdp;
-uint8_t uniData[514];
-uint16_t uniSize;
+uint8_t uniData[514]; uint16_t uniSize; uint8_t net = 0; uint8_t universe; uint8_t subnet = 0;
 uint8_t hData[ARTNET_HEADER + 1];
-uint8_t net = 0;
-uint8_t universe;
-uint8_t subnet = 0;
 
 // Neopixel settings
-const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫХ ПИКСЕЛЕЙ В ЛЕНТЕ ***********************************
+const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫХ ПИКСЕЛЕЙ В ЛЕНТЕ 
 const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
 const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
 NeoPixelBus<NeoRgbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
 
-//Settings for manual strip control
-#define int_mid 128;
-#define int_full 255;
-int colorSaturation = int_mid;
-RgbColor red(colorSaturation, 0, 0);
-RgbColor green(0, colorSaturation, 0);
-RgbColor blue(0, 0, colorSaturation);
-RgbColor black(0, 0, 0);
-
-//Sets status led to show current mode (OFF - WIFI, ON - LAN)
+//Sets status led to show current mode (OFF - WIFI, ON - LAN) !val becouse ESP sets incorrect (inverted)
 void setStatusLed(int val) { digitalWrite(STATUS_LED, !val); }
 
 void checkStatus(){ //Reads the MODE pin and sets mode variable according
-  #ifdef FLASH_SELECT
+  #ifdef FLASH_SELECT //FLASH SELECT
     if (EEPROM.read(0) == 1) 
-    {mode = STATUS_LAN;}
-      else {mode = STATUS_WIFI;}
+      {mode = STATUS_LAN;}
+        else  // EXTERNAL button select
+          {mode = STATUS_WIFI;}
   #else
-      if (digitalRead(MODE_PIN) == 0) {mode = STATUS_WIFI;}
-      else {mode = STATUS_LAN;}
+      if (digitalRead(MODE_PIN) == 0) 
+        {mode = STATUS_WIFI;}
+          else 
+            {mode = STATUS_LAN;}
   #endif
   }
 
 #ifdef FLASH_SELECT
   void onPressed() {
     if (ledmod == 112)
-    ledmod = !mode;
+      ledmod = !mode;
     else ledmod = !ledmod;
-    EEPROM.write(0, ledmod);
+      EEPROM.write(0, ledmod);
     if(EEPROM.commit()) setStatusLed(ledmod);
   }
 #endif
@@ -108,7 +96,7 @@ void setup() {
   #endif
   pinMode(STATUS_LED, OUTPUT);
   pinMode(MODE_PIN, INPUT);
-  checkStatus();
+  checkStatus(); //Set mode by changing value of variable <mode>
   if (mode == STATUS_WIFI) 
     {ConnectWifi();}
       else 
@@ -116,8 +104,6 @@ void setup() {
   setStatusLed(mode);
   strip.Begin();
   OTA_Func();
-  Serial.println();
-  Serial.println(mode);
 }
 
 void loop() { 
@@ -159,7 +145,7 @@ void IRAM_ATTR readWiFiUDP() {
     }
 }
 
-//Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
+//Reading Ethernet UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readEthernetUDP() {
     if (ethernetUdp.parsePacket() /*&& ethernetUdp.destinationIP() == ip*/) {
         ethernetUdp.read(hData, 18);
@@ -190,26 +176,6 @@ void sendWS() {
         strip.SetPixelColor(i, color);
     } 
     strip.Show(); 
-}
-
-//
-void initTest()
-{
-  for (int i = 0 ; i < PixelCount ; i++)
-    strip.SetPixelColor(i, red);
-  strip.Show();
-  delay(500);
-  for (int i = 0 ; i < PixelCount ; i++)
-    strip.SetPixelColor(i, green);
-  strip.Show();
-  delay(500);
-  for (int i = 0 ; i < PixelCount ; i++)
-    strip.SetPixelColor(i, blue);
-  strip.Show();
-  delay(500);
-  for (int i = 0 ; i < PixelCount ; i++)
-    strip.SetPixelColor(i, black);
-  strip.Show();
 }
 
 //OTA - Flashing over Air
@@ -247,5 +213,3 @@ void OTA_Func() {
   });
   ArduinoOTA.begin();
   }
-
-  
