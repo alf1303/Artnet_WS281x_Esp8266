@@ -19,8 +19,16 @@
   #ifdef FLASH_SELECT 
     #include <EasyButton.h>
     #include <EEPROM.h>
+    #include <Ticker.h>
+    #define AUTO_LED 16 // Led indicator for autoMode (16 - built-in for NodeMCU)
     EasyButton m_button(0);
+    Ticker tickerLow;
+    Ticker tickerHigh;
     uint8_t ledmod = 112;
+    uint8_t ledautomod = 112;
+    void setPin(int state) {
+      digitalWrite(AUTO_LED, !state);
+    }
   #endif
 
 //Button Settings
@@ -31,6 +39,8 @@
 uint8_t mode; // WIFI or LAN mode variable (0 - WIFI, 1 - LAN)
 uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 5;
+int period = 40;
+unsigned long time_now = 0;
 
 
 // ARTNET CODES
@@ -41,11 +51,11 @@ const uint8_t autoModeCount = 5;
 #define ARTNET_HEADER 17
 
 //Ethernet Settings
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x70 }; // Last same as ip **************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x54 }; // Last same as ip **************************
 
 //Wifi Settings
-const uint8_t startUniverse = 70; //****************************
-IPAddress ip(2, 0, 0, 70); //IP ADDRESS NODEMCU ****************
+const uint8_t startUniverse = 54; //****************************
+IPAddress ip(2, 0, 0, 54); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* ssid = "ANetEsp"; //SSID 
@@ -62,6 +72,12 @@ const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫ�
 const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
 const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
 NeoPixelBus<NeoRgbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
+#define colorSaturation 100
+RgbColor red(colorSaturation, 0, 0);
+RgbColor green(0, colorSaturation, 0);
+RgbColor blue(0, 0, colorSaturation);
+RgbColor white(colorSaturation);
+RgbColor black(0);
 
 //LCD Settings
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -75,7 +91,11 @@ void checkStatus(){ //Reads the MODE pin and sets mode variable according
     uint8_t readAutoMode = EEPROM.read(1);
     if ((readMode < 0) || (readMode > 2))
       mode = STATUS_WIFI;
-    else  mode = readMode;
+    else  {
+      mode = readMode;
+      if (mode == 2) setPin(1);
+      else setPin(0);
+      }
     if (readAutoMode >= autoModeCount)
       autoMode = 0;
     else autoMode = readAutoMode; 
@@ -88,23 +108,54 @@ void checkStatus(){ //Reads the MODE pin and sets mode variable according
   lcd.clear(); 
   lcd.print("Mode: "); lcd.print(convertModes(mode));
   lcd.setCursor(0, 1);
-  lcd.print("AutoMode: "); lcd.print(convertAutoModes(autoMode));
+  lcd.print("AutMod "); lcd.print(convertAutoModes(autoMode));
   }
 
 #ifdef FLASH_SELECT
   void onPressed() {
-    if (ledmod == 112)
-      ledmod = !mode;
-    else ledmod = !ledmod;
-      EEPROM.write(0, ledmod);
-    if(EEPROM.commit()) setStatusLed(ledmod);
-    lcd.clear();
-    lcd.print("one press");
+    if (mode != 2) {
+      if (ledmod == 112)
+        ledmod = !mode;
+      else ledmod = !ledmod;
+        EEPROM.write(0, ledmod);
+      if(EEPROM.commit()) {
+        setStatusLed(ledmod);
+        lcd.clear(); 
+        lcd.print("NextM: "); lcd.print(convertModes(ledmod));
+        //ledautomod = 0;
+      }
+    }
+    else {
+      autoMode++;
+      if (autoMode > 4) autoMode = 0;
+      EEPROM.write(1, autoMode);
+      if(EEPROM.commit()) {
+        lcd.clear(); 
+        lcd.print("AutoM: "); lcd.print(convertAutoModes(autoMode));
+        //ledautomod = 1;
+      }
+    }
   }
 
   void onPressedForDuration3s() {
-    lcd.clear();
-    lcd.print("duration 3s");
+        uint8_t temp;
+        ledautomod = !ledautomod;
+        if (ledautomod) {
+          temp = 2;
+          setPin(1);
+          }
+        else {
+          temp = 0;
+          setPin(0);
+          }
+        EEPROM.write(0, temp);
+        if(EEPROM.commit()) {
+          lcd.clear(); 
+          lcd.print("Next: "); lcd.print(convertModes(temp));
+          lcd.setCursor(0,1);
+          lcd.print("ledautomod ");
+          lcd.print(ledautomod);
+        } 
     }
   
 #endif
@@ -121,6 +172,7 @@ void setup() {
     Wire.begin(D2, D3);
     lcd.begin();
     lcd.backlight();
+    pinMode(AUTO_LED, OUTPUT);
   #endif
   pinMode(STATUS_LED, OUTPUT);
   pinMode(MODE_PIN, INPUT);
@@ -130,7 +182,6 @@ void setup() {
       else 
         {ConnectEthernet();}
   setStatusLed(mode);
-  Serial.println(mode);
   strip.Begin();
   OTA_Func();
 }
@@ -140,7 +191,7 @@ void loop() {
     m_button.read();
   #endif
   ArduinoOTA.handle();
-    readUDP();
+    processData();
 }
 
 // connect to wifi
@@ -194,14 +245,39 @@ void IRAM_ATTR readEthernetUDP() {
     }
 }
 
-//Choosing which readUPD function to use
-void readUDP() {
-  if (mode == STATUS_LAN) 
-  {
-    readEthernetUDP();
+void autoModeFunc() {
+  if (autoMode == 0) {
     }
-  else {
-    readWiFiUDP();
+    else {
+      switch (autoMode) {
+        case 1:
+          setStaticColor(white);
+          break;
+        case 2:
+          setStaticColor(red);
+          break;
+         case 3:
+          setStaticColor(green);
+          break;
+         case 4:
+          setStaticColor(blue);
+          break;
+        }
+    }
+  }
+
+//Choosing which readUPD function to use
+void processData() {
+  switch (mode) {
+    case 0:
+      readWiFiUDP();
+      break;
+    case 1:
+      readEthernetUDP();
+      break;
+    case 2:
+      autoModeFunc();
+      break;
     }
   }
 
@@ -248,4 +324,58 @@ void OTA_Func() {
     }
   });
   ArduinoOTA.begin();
+  }
+
+  void pixel_test() {
+  for (int i = 0; i < PixelCount; i++) {
+      strip.SetPixelColor(i, red);
+      strip.Show();
+      delay(period);
+      }
+        
+    // turn off the pixels
+        for (int i = 0; i < PixelCount; i++) {
+      strip.SetPixelColor(i, black);
+      strip.Show();
+           delay(period);
+      }
+
+          for (int i = 0; i < PixelCount; i++) {
+      strip.SetPixelColor(i, green);
+      strip.Show();
+         delay(period);
+      }
+
+    // turn off the pixels
+        for (int i = 0; i < PixelCount; i++) {
+      strip.SetPixelColor(i, black);
+      strip.Show();
+           delay(period);
+      }
+
+          for (int i = 0; i < PixelCount; i++) {
+            time_now = millis();
+      strip.SetPixelColor(i, blue);
+      strip.Show();
+           while (millis() < time_now + period) {
+        // waiting
+        }
+          }
+
+    // turn off the pixels
+        for (int i = 0; i < PixelCount; i++) {
+          time_now = millis();
+      strip.SetPixelColor(i, black);
+      strip.Show();
+           while (millis() < time_now + period) {
+        // waiting
+        }
+        }
+  }
+
+  void setStaticColor(RgbColor color) {
+    for (int i = 0; i < PixelCount; i++) {
+      strip.SetPixelColor(i, color);
+      strip.Show();
+    }
   }
