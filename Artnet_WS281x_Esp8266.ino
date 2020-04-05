@@ -8,12 +8,13 @@
 
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
-
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 #include <UIPEthernet.h>
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
   #ifdef FLASH_SELECT 
     #include <EasyButton.h>
     #include <EEPROM.h>
@@ -37,11 +38,11 @@ uint8_t mode; // WIFI or LAN mode variable (0 - WIFI, 1 - LAN)
 #define ARTNET_HEADER 17
 
 //Ethernet Settings
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x55 }; // Last same as ip **************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x70 }; // Last same as ip **************************
 
 //Wifi Settings
-const uint8_t startUniverse = 55; //****************************
-IPAddress ip(2, 0, 0, 55); //IP ADDRESS NODEMCU ****************
+const uint8_t startUniverse = 70; //****************************
+IPAddress ip(2, 0, 0, 70); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* ssid = "ANetEsp"; //SSID 
@@ -59,11 +60,16 @@ const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignore
 const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
 NeoPixelBus<NeoRgbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
 
+//LCD Settings
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
 //Sets status led to show current mode (OFF - WIFI, ON - LAN) !val becouse ESP sets incorrect (inverted)
 void setStatusLed(int val) { digitalWrite(STATUS_LED, !val); }
 
 void checkStatus(){ //Reads the MODE pin and sets mode variable according
   #ifdef FLASH_SELECT //FLASH SELECT
+  int readMode = EEPROM.read(0);
+  int readManMode = EEPROM.read(1);
     if (EEPROM.read(0) == 1) 
       {mode = STATUS_LAN;}
         else  // EXTERNAL button select
@@ -83,16 +89,30 @@ void checkStatus(){ //Reads the MODE pin and sets mode variable according
     else ledmod = !ledmod;
       EEPROM.write(0, ledmod);
     if(EEPROM.commit()) setStatusLed(ledmod);
+    lcd.clear();
+    lcd.print("one press");
   }
+
+  void onPressedForDuration3s() {
+    lcd.clear();
+    lcd.print("duration 3s");
+    }
+  
 #endif
 
 void setup() {
-  //Serial.begin(115200);
-  //delay(10);
+  Serial.begin(115200);
+  delay(10);
+  
   #ifdef FLASH_SELECT
     EEPROM.begin(10);
     m_button.begin();
     m_button.onPressed(onPressed);
+    m_button.onPressedFor(3000, onPressedForDuration3s);
+    Wire.begin(D2, D3);
+    lcd.begin();
+    lcd.backlight();
+    lcd.print("Welcome to WS!");
   #endif
   pinMode(STATUS_LED, OUTPUT);
   pinMode(MODE_PIN, INPUT);
@@ -102,6 +122,7 @@ void setup() {
       else 
         {ConnectEthernet();}
   setStatusLed(mode);
+  Serial.println(mode);
   strip.Begin();
   OTA_Func();
 }
@@ -117,13 +138,20 @@ void loop() {
 // connect to wifi
 boolean ConnectWifi(void)
 {
+  boolean state = true;
+  int i = 0;
   WiFi.config(ip, gateway, subnet_ip);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
    // Serial.print(".");
+   if (i > 20){
+    state = false;
+      break;
+    }
+    i++;
   }
-  wifiUdp.begin(ARTNET_PORT); // Open ArtNet port for WIFI
+  if (state) wifiUdp.begin(ARTNET_PORT); // Open ArtNet port for WIFI
 }
 
 //connect Ethernet
