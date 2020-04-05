@@ -15,6 +15,7 @@
 #include <UIPEthernet.h>
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
+#include "helpers.h"
   #ifdef FLASH_SELECT 
     #include <EasyButton.h>
     #include <EEPROM.h>
@@ -28,6 +29,8 @@
 #define STATUS_LAN 1
 #define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
 uint8_t mode; // WIFI or LAN mode variable (0 - WIFI, 1 - LAN)
+uint8_t autoMode; // mode for Automatic strip control
+const uint8_t autoModeCount = 5;
 
 
 // ARTNET CODES
@@ -68,18 +71,24 @@ void setStatusLed(int val) { digitalWrite(STATUS_LED, !val); }
 
 void checkStatus(){ //Reads the MODE pin and sets mode variable according
   #ifdef FLASH_SELECT //FLASH SELECT
-  int readMode = EEPROM.read(0);
-  int readManMode = EEPROM.read(1);
-    if (EEPROM.read(0) == 1) 
-      {mode = STATUS_LAN;}
-        else  // EXTERNAL button select
-          {mode = STATUS_WIFI;}
+    uint8_t readMode = EEPROM.read(0);
+    uint8_t readAutoMode = EEPROM.read(1);
+    if ((readMode < 0) || (readMode > 2))
+      mode = STATUS_WIFI;
+    else  mode = readMode;
+    if (readAutoMode >= autoModeCount)
+      autoMode = 0;
+    else autoMode = readAutoMode; 
   #else
       if (digitalRead(MODE_PIN) == 0) 
         {mode = STATUS_WIFI;}
           else 
             {mode = STATUS_LAN;}
   #endif
+  lcd.clear(); 
+  lcd.print("Mode: "); lcd.print(convertModes(mode));
+  lcd.setCursor(0, 1);
+  lcd.print("AutoMode: "); lcd.print(convertAutoModes(autoMode));
   }
 
 #ifdef FLASH_SELECT
@@ -112,7 +121,6 @@ void setup() {
     Wire.begin(D2, D3);
     lcd.begin();
     lcd.backlight();
-    lcd.print("Welcome to WS!");
   #endif
   pinMode(STATUS_LED, OUTPUT);
   pinMode(MODE_PIN, INPUT);
@@ -145,7 +153,7 @@ boolean ConnectWifi(void)
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
    // Serial.print(".");
-   if (i > 20){
+   if (i > 16){
     state = false;
       break;
     }
