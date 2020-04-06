@@ -22,8 +22,7 @@
     #include <Ticker.h>
     #define AUTO_LED 16 // Led indicator for autoMode (16 - built-in for NodeMCU)
     EasyButton m_button(0);
-    Ticker tickerLow;
-    Ticker tickerHigh;
+    Ticker ticker;
     uint8_t ledmod = 112;
     uint8_t ledautomod = 112;
     void setPin(int state) {
@@ -39,9 +38,6 @@
 uint8_t mode; // WIFI or LAN mode variable (0 - WIFI, 1 - LAN)
 uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 5;
-int period = 40;
-unsigned long time_now = 0;
-
 
 // ARTNET CODES
 #define ARTNET_DATA 0x50
@@ -51,11 +47,11 @@ unsigned long time_now = 0;
 #define ARTNET_HEADER 17
 
 //Ethernet Settings
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x54 }; // Last same as ip **************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x70 }; // Last same as ip **************************
 
 //Wifi Settings
-const uint8_t startUniverse = 54; //****************************
-IPAddress ip(2, 0, 0, 54); //IP ADDRESS NODEMCU ****************
+const uint8_t startUniverse = 51; //****************************
+IPAddress ip(2, 0, 0, 70); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* ssid = "ANetEsp"; //SSID 
@@ -78,6 +74,8 @@ RgbColor green(0, colorSaturation, 0);
 RgbColor blue(0, 0, colorSaturation);
 RgbColor white(colorSaturation);
 RgbColor black(0);
+float chaseHue = 0.0f;
+HslColor chaseColor;
 
 //LCD Settings
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -91,11 +89,9 @@ void checkStatus(){ //Reads the MODE pin and sets mode variable according
     uint8_t readAutoMode = EEPROM.read(1);
     if ((readMode < 0) || (readMode > 2))
       mode = STATUS_WIFI;
-    else  {
-      mode = readMode;
-      if (mode == 2) setPin(1);
-      else setPin(0);
-      }
+    else  { mode = readMode;}
+      if (mode == 2) {setPin(1); ledautomod = 1;}
+      else {setPin(0); ledautomod = 0;}
     if (readAutoMode >= autoModeCount)
       autoMode = 0;
     else autoMode = readAutoMode; 
@@ -247,6 +243,7 @@ void IRAM_ATTR readEthernetUDP() {
 
 void autoModeFunc() {
   if (autoMode == 0) {
+    chaserColor();
     }
     else {
       switch (autoMode) {
@@ -326,52 +323,14 @@ void OTA_Func() {
   ArduinoOTA.begin();
   }
 
-  void pixel_test() {
-  for (int i = 0; i < PixelCount; i++) {
-      strip.SetPixelColor(i, red);
-      strip.Show();
-      delay(period);
-      }
-        
-    // turn off the pixels
-        for (int i = 0; i < PixelCount; i++) {
-      strip.SetPixelColor(i, black);
-      strip.Show();
-           delay(period);
-      }
-
-          for (int i = 0; i < PixelCount; i++) {
-      strip.SetPixelColor(i, green);
-      strip.Show();
-         delay(period);
-      }
-
-    // turn off the pixels
-        for (int i = 0; i < PixelCount; i++) {
-      strip.SetPixelColor(i, black);
-      strip.Show();
-           delay(period);
-      }
-
-          for (int i = 0; i < PixelCount; i++) {
-            time_now = millis();
-      strip.SetPixelColor(i, blue);
-      strip.Show();
-           while (millis() < time_now + period) {
-        // waiting
-        }
-          }
-
-    // turn off the pixels
-        for (int i = 0; i < PixelCount; i++) {
-          time_now = millis();
-      strip.SetPixelColor(i, black);
-      strip.Show();
-           while (millis() < time_now + period) {
-        // waiting
-        }
-        }
-  }
+    void chaserColor() {
+        chaseColor = HslColor (chaseHue, 1.0f, 0.4f);
+        for (int i = 0; i < PixelCount; i++) strip.SetPixelColor(i, chaseColor);
+        strip.Show();
+        chaseHue = chaseHue + 0.005f;
+        if (chaseHue >= 1.0) chaseHue = 0;
+        delay(100);
+    }
 
   void setStaticColor(RgbColor color) {
     for (int i = 0; i < PixelCount; i++) {
