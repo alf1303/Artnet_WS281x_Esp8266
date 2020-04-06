@@ -14,17 +14,15 @@
 #include <NeoPixelBus.h>
 #include <UIPEthernet.h>
 #include <Wire.h> 
-#include <LiquidCrystal_I2C.h>
+//#include <LiquidCrystal_I2C.h>
 #include "helpers.h"
   #ifdef FLASH_SELECT 
     #include <EasyButton.h>
     #include <EEPROM.h>
-    #include <Ticker.h>
     #define AUTO_LED 16 // Led indicator for autoMode (16 - built-in for NodeMCU)
-    EasyButton m_button(0);
-    Ticker ticker;
-    uint8_t ledmod = 112;
-    uint8_t ledautomod = 112;
+    EasyButton m_button(0); //FLASH button on NodeMCU
+    uint8_t ledmod = 112; //indicator for on/off STATUS_LED led ()
+    uint8_t ledautomod; //indicator for on/off AUTO_LED ()
     void setPin(int state) {
       digitalWrite(AUTO_LED, !state);
     }
@@ -37,7 +35,8 @@
 #define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
 uint8_t mode; // WIFI or LAN mode variable (0 - WIFI, 1 - LAN)
 uint8_t autoMode; // mode for Automatic strip control
-const uint8_t autoModeCount = 5;
+const uint8_t autoModeCount = 5; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue for now)
+                                  //Change if add more submodes
 
 // ARTNET CODES
 #define ARTNET_DATA 0x50
@@ -47,7 +46,7 @@ const uint8_t autoModeCount = 5;
 #define ARTNET_HEADER 17
 
 //Ethernet Settings
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x70 }; // Last same as ip **************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x70 }; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = 51; //****************************
@@ -68,43 +67,38 @@ const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫ�
 const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
 const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
 NeoPixelBus<NeoRgbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
-#define colorSaturation 100
+#define colorSaturation 200 //brightness for AUTO mode
 RgbColor red(colorSaturation, 0, 0);
 RgbColor green(0, colorSaturation, 0);
 RgbColor blue(0, 0, colorSaturation);
 RgbColor white(colorSaturation);
 RgbColor black(0);
-float chaseHue = 0.0f;
-HslColor chaseColor;
+float chaseHue = 0.0f; // for CHASE submode of AUTO mode
+HslColor chaseColor;  // for CHASE submode of AUTO mode
 
 //LCD Settings
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+//LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 //Sets status led to show current mode (OFF - WIFI, ON - LAN) !val becouse ESP sets incorrect (inverted)
 void setStatusLed(int val) { digitalWrite(STATUS_LED, !val); }
 
-void checkStatus(){ //Reads the MODE pin and sets mode variable according
+void checkStatus(){ //Gets value and sets mode variable according to it
   #ifdef FLASH_SELECT //FLASH SELECT
     uint8_t readMode = EEPROM.read(0);
     uint8_t readAutoMode = EEPROM.read(1);
-    if ((readMode < 0) || (readMode > 2))
+    if ((readMode < 0) || (readMode > 2)) // if not correct values, set default - WIFI
       mode = STATUS_WIFI;
-    else  { mode = readMode;}
-      if (mode == 2) {setPin(1); ledautomod = 1;}
-      else {setPin(0); ledautomod = 0;}
-    if (readAutoMode >= autoModeCount)
-      autoMode = 0;
+    else  { mode = readMode;}  //Set readed value
+      if (mode == 2) {setPin(1); ledautomod = 1;} // On AUTO mode led and set it indicator
+      else {setPin(0); ledautomod = 0;} // Off AUTO mode led and set it indicator
+    if (readAutoMode >= autoModeCount)  autoMode = 0; // Set default if readed incorrect
     else autoMode = readAutoMode; 
-  #else
+  #else //EXTERNAL button select
       if (digitalRead(MODE_PIN) == 0) 
         {mode = STATUS_WIFI;}
           else 
             {mode = STATUS_LAN;}
   #endif
-  lcd.clear(); 
-  lcd.print("Mode: "); lcd.print(convertModes(mode));
-  lcd.setCursor(0, 1);
-  lcd.print("AutMod "); lcd.print(convertAutoModes(autoMode));
   }
 
 #ifdef FLASH_SELECT
@@ -116,9 +110,6 @@ void checkStatus(){ //Reads the MODE pin and sets mode variable according
         EEPROM.write(0, ledmod);
       if(EEPROM.commit()) {
         setStatusLed(ledmod);
-        lcd.clear(); 
-        lcd.print("NextM: "); lcd.print(convertModes(ledmod));
-        //ledautomod = 0;
       }
     }
     else {
@@ -126,9 +117,6 @@ void checkStatus(){ //Reads the MODE pin and sets mode variable according
       if (autoMode > 4) autoMode = 0;
       EEPROM.write(1, autoMode);
       if(EEPROM.commit()) {
-        lcd.clear(); 
-        lcd.print("AutoM: "); lcd.print(convertAutoModes(autoMode));
-        //ledautomod = 1;
       }
     }
   }
@@ -136,38 +124,28 @@ void checkStatus(){ //Reads the MODE pin and sets mode variable according
   void onPressedForDuration3s() {
         uint8_t temp;
         ledautomod = !ledautomod;
-        if (ledautomod) {
-          temp = 2;
-          setPin(1);
-          }
-        else {
-          temp = 0;
-          setPin(0);
-          }
+        if (ledautomod) { temp = 2; }
+        else { temp = 0; }
         EEPROM.write(0, temp);
         if(EEPROM.commit()) {
-          lcd.clear(); 
-          lcd.print("Next: "); lcd.print(convertModes(temp));
-          lcd.setCursor(0,1);
-          lcd.print("ledautomod ");
-          lcd.print(ledautomod);
+          if (temp == 2) setPin(1);
+          if (temp == 0) setPin(0);
         } 
     }
-  
 #endif
 
 void setup() {
-  Serial.begin(115200);
-  delay(10);
+  //Serial.begin(115200);
+  //delay(10);
   
   #ifdef FLASH_SELECT
     EEPROM.begin(10);
     m_button.begin();
     m_button.onPressed(onPressed);
     m_button.onPressedFor(3000, onPressedForDuration3s);
-    Wire.begin(D2, D3);
-    lcd.begin();
-    lcd.backlight();
+    //Wire.begin(D2, D3);
+    //lcd.begin();
+    //lcd.backlight();
     pinMode(AUTO_LED, OUTPUT);
   #endif
   pinMode(STATUS_LED, OUTPUT);
@@ -200,7 +178,7 @@ boolean ConnectWifi(void)
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
    // Serial.print(".");
-   if (i > 16){
+   if (i > 16){              // Wait 8s for connecting to WiFI
     state = false;
       break;
     }
