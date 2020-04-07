@@ -46,11 +46,11 @@ const uint8_t autoModeCount = 5; //Number of submodes in AUTO mode (Chase, White
 #define ARTNET_HEADER 17
 
 //Ethernet Settings
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x70 }; // Last byte same as ip **************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x55 }; // Last byte same as ip **************************
 
 //Wifi Settings
-const uint8_t startUniverse = 51; //****************************
-IPAddress ip(2, 0, 0, 70); //IP ADDRESS NODEMCU ****************
+const uint8_t startUniverse = 55; //****************************
+IPAddress ip(2, 0, 0, 55); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* ssid = "ANetEsp"; //SSID 
