@@ -1,4 +1,5 @@
-/*
+/*  platformio run -t upload --upload-port 2.0.0.51
+
 --- Receiving ArtNet over WiFi using Esp8266
 --- Receiving ArtNet over Ethernet using Enc28j60, connected to Esp8266
 --- Output Artnet data to ws2812/13 using NeoPixelBus library
@@ -12,12 +13,12 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
-#include <UIPEthernet.h>
+#include "../lib/UIPEthernet/UIPEthernet.h"
 #include <Wire.h> 
 //#include <LiquidCrystal_I2C.h>
 #include "helpers.h"
   #ifdef FLASH_SELECT 
-    #include <EasyButton.h>
+    #include "../lib/EasyButton/src/EasyButton.h"
     #include <EEPROM.h>
     #define AUTO_LED 16 // Led indicator for autoMode (16 - built-in for NodeMCU)
     EasyButton m_button(0); //FLASH button on NodeMCU
@@ -46,11 +47,12 @@ const uint8_t autoModeCount = 5; //Number of submodes in AUTO mode (Chase, White
 #define ARTNET_HEADER 17
 
 //Ethernet Settings
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x55 }; // Last byte same as ip **************************
+#define IND 54 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x54}; // Last byte same as ip **************************
 
 //Wifi Settings
-const uint8_t startUniverse = 55; //****************************
-IPAddress ip(2, 0, 0, 55); //IP ADDRESS NODEMCU ****************
+const uint8_t startUniverse = IND; //****************************
+IPAddress ip(2, 0, 0, IND); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* ssid = "ANetEsp"; //SSID 
@@ -185,6 +187,7 @@ boolean ConnectWifi(void)
     i++;
   }
   if (state) wifiUdp.begin(ARTNET_PORT); // Open ArtNet port for WIFI
+  return state;
 }
 
 //connect Ethernet
