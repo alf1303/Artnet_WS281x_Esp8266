@@ -14,7 +14,7 @@
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 #include "../lib/UIPEthernet/UIPEthernet.h"
-#include <Wire.h> 
+//#include <Wire.h> 
 //#include <LiquidCrystal_I2C.h>
 #include "helpers.h"
   #ifdef FLASH_SELECT 
@@ -39,13 +39,6 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 5; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue for now)
                                   //Change if add more submodes
 
-// ARTNET CODES
-#define ARTNET_DATA 0x50
-#define ARTNET_POLL 0x20
-#define ARTNET_POLL_REPLY 0x21
-#define ARTNET_PORT 6454
-#define ARTNET_HEADER 17
-
 //Ethernet Settings
 #define IND 54 //************************************
 const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x54}; // Last byte same as ip **************************
@@ -69,12 +62,7 @@ const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫ�
 const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
 const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
 NeoPixelBus<NeoRgbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
-#define colorSaturation 200 //brightness for AUTO mode
-RgbColor red(colorSaturation, 0, 0);
-RgbColor green(0, colorSaturation, 0);
-RgbColor blue(0, 0, colorSaturation);
-RgbColor white(colorSaturation);
-RgbColor black(0);
+
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 HslColor chaseColor;  // for CHASE submode of AUTO mode
 
