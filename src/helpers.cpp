@@ -1,3 +1,4 @@
+
 char* convertModes(int mod) {
     switch (mod)
     {

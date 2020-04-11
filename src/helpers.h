@@ -1,3 +1,9 @@
+#ifdef DROP_PACKETS 
+#define MIN_TIME 30 // Minimum time duration between 2 packets for allowing show packets (in milliseconds)
+long newTime = 0;
+long noSignalTime = 0;
+#endif
+
 // ARTNET CODES
 #define ARTNET_DATA 0x50
 #define ARTNET_POLL 0x20

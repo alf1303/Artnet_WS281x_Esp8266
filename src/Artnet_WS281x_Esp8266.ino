@@ -5,11 +5,12 @@
 --- Output Artnet data to ws2812/13 using NeoPixelBus library
 --- Catch one universe
 --- uses GPIO3 (RX on Esp8266) GPIO2 for other boards
-tyrtyr
 */
 
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
+#define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
+#define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
@@ -29,6 +30,7 @@ tyrtyr
       digitalWrite(AUTO_LED, !state);
     }
   #endif
+  
 
 //Button Settings
 #define MODE_PIN 5 //pin for changing mode (LOW - WIFI, HIGH - LAN) with external button
@@ -38,7 +40,6 @@ tyrtyr
 uint8_t mode; // WIFI or LAN mode variable (0 - WIFI, 1 - LAN)
 uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 5; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue for now)
-                                  //Change if add more submodes
 
 //Ethernet Settings
 #define IND 55 //************************************
@@ -90,7 +91,7 @@ void checkStatus(){ //Gets value and sets mode variable according to it
           else 
             {mode = STATUS_LAN;}
   #endif
-  }
+}
 
 #ifdef FLASH_SELECT
   void onPressed() {
@@ -160,8 +161,7 @@ void loop() {
 }
 
 // connect to wifi
-boolean ConnectWifi(void)
-{
+boolean ConnectWifi(void) {
   boolean state = true;
   int i = 0;
   WiFi.config(ip, gateway, subnet_ip);
@@ -183,27 +183,31 @@ boolean ConnectWifi(void)
 void ConnectEthernet() {
   Ethernet.begin(mac,ip, dns, gateway, subnet_ip);
   ethernetUdp.begin(ARTNET_PORT); // Open ArtNet port LAN) 
-  }
+}
 
-long neww = 0;
-int testTime() {
- long old = neww;
-        neww = millis();
-        int res = neww - old;
+//Return duration between current time and time in variable "newTime"
+int getTimeDuration() { 
+ long old = newTime;
+        newTime = millis();
+        int res = newTime - old;
         return res;
-        }
+}
 
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readWiFiUDP() {
     if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
+      noSignalTime = millis();
         wifiUdp.read(hData, 18);
      if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
          uniSize = (hData[16] << 8) + (hData[17]);
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
-         Serial.print(testTime());
-         Serial.print("  ");
-         sendWS();
+
+         #ifdef DROP_PACKETS
+         if (getTimeDuration() > MIN_TIME) sendWS();
+          #else 
+          sendWS();
+         #endif
         }    
     }
 }
@@ -211,17 +215,38 @@ void IRAM_ATTR readWiFiUDP() {
 //Reading Ethernet UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readEthernetUDP() {
     if (ethernetUdp.parsePacket() /*&& ethernetUdp.destinationIP() == ip*/) {
+      noSignalTime = millis();
         ethernetUdp.read(hData, 18);
      if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
          uniSize = (hData[16] << 8) + (hData[17]);
          ethernetUdp.read(uniData, uniSize);
          universe = hData[14];
-         Serial.print(testTime());
-         Serial.print("  ");
-         sendWS();
+
+          #ifdef DROP_PACKETS
+         if (getTimeDuration() > MIN_TIME) sendWS();
+          #else 
+          sendWS();
+         #endif
         }    
     }
 }
+
+//Choosing which readUPD function to use
+void processData() {
+  switch (mode) {
+    case 0:
+      readWiFiUDP();
+      if ((millis() - noSignalTime) > NO_SIG) setStaticColor(black);
+      break;
+    case 1:
+      readEthernetUDP();
+      if ((millis() - noSignalTime) > NO_SIG) setStaticColor(black);
+      break;
+    case 2:
+      autoModeFunc();
+      break;
+    }
+  }
 
 void autoModeFunc() {
   if (autoMode == 0) {
@@ -245,20 +270,7 @@ void autoModeFunc() {
     }
   }
 
-//Choosing which readUPD function to use
-void processData() {
-  switch (mode) {
-    case 0:
-      readWiFiUDP();
-      break;
-    case 1:
-      readEthernetUDP();
-      break;
-    case 2:
-      autoModeFunc();
-      break;
-    }
-  }
+
 
 void sendWS() {
     for (int i = 0; i < PixelCount; i++)
