@@ -1,8 +1,10 @@
 #ifdef DROP_PACKETS 
 #define MIN_TIME 30 // Minimum time duration between 2 packets for allowing show packets (in milliseconds)
-long newTime = 0;
-long noSignalTime = 0;
+long newTime = 0; // holds time for calculating time interval between packets (for DROP_PACLETS mode)
 #endif
+long noSignalTime = 0; // holds time for calculating time interval after last arrived packet (for NOSIGNAL blackout mode)
+bool blackoutSetted = false; // used for avoiding blackout if no signal, when in RECORDED mode
+int recordPacketsCounter = 0; // counting packets for allow saving received packet into FS (for avoiding signal noise issues)
 
 // ARTNET CODES
 #define ARTNET_DATA 0x50

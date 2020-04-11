@@ -26,6 +26,7 @@
     EasyButton m_button(0); //FLASH button on NodeMCU
     uint8_t ledmod = 112; //indicator for on/off STATUS_LED led ()
     uint8_t ledautomod; //indicator for on/off AUTO_LED ()
+    //Set AUTO mode led
     void setPin(int state) {
       digitalWrite(AUTO_LED, !state);
     }
@@ -37,13 +38,13 @@
 #define STATUS_WIFI 0 
 #define STATUS_LAN 1
 #define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
-uint8_t mode; // WIFI or LAN mode variable (0 - WIFI, 1 - LAN)
+uint8_t mode; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO)
 uint8_t autoMode; // mode for Automatic strip control
-const uint8_t autoModeCount = 5; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue for now)
+const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define IND 55 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x55}; // Last byte same as ip **************************
+#define IND 54 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x54}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = IND; //****************************
@@ -85,6 +86,7 @@ void checkStatus(){ //Gets value and sets mode variable according to it
       else {setPin(0); ledautomod = 0;} // Off AUTO mode led and set it indicator
     if (readAutoMode >= autoModeCount)  autoMode = 0; // Set default if readed incorrect
     else autoMode = readAutoMode; 
+    if (autoMode == 5) readDataPacketFromFS();
   #else //EXTERNAL button select
       if (digitalRead(MODE_PIN) == 0) 
         {mode = STATUS_WIFI;}
@@ -106,7 +108,7 @@ void checkStatus(){ //Gets value and sets mode variable according to it
     }
     else {
       autoMode++;
-      if (autoMode > 4) autoMode = 0;
+      if (autoMode > 5) autoMode = 0;
       EEPROM.write(1, autoMode);
       if(EEPROM.commit()) {
       }
@@ -127,11 +129,11 @@ void checkStatus(){ //Gets value and sets mode variable according to it
 #endif
 
 void setup() {
-  Serial.begin(115200);
-  delay(10);
+  //Serial.begin(115200);
+  //delay(10);
   
   #ifdef FLASH_SELECT
-    EEPROM.begin(10);
+    EEPROM.begin(530);
     m_button.begin();
     m_button.onPressed(onPressed);
     m_button.onPressedFor(3000, onPressedForDuration3s);
@@ -143,10 +145,10 @@ void setup() {
   pinMode(STATUS_LED, OUTPUT);
   pinMode(MODE_PIN, INPUT);
   checkStatus(); //Set mode by changing value of variable <mode>
-  if (mode == STATUS_WIFI) 
-    {ConnectWifi();}
+  if (mode == STATUS_LAN) 
+    {ConnectEthernet();}
       else 
-        {ConnectEthernet();}
+        {ConnectWifi();}
   setStatusLed(mode);
   strip.Begin();
   OTA_Func();
@@ -196,7 +198,8 @@ int getTimeDuration() {
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readWiFiUDP() {
     if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
-      noSignalTime = millis();
+      noSignalTime = millis(); //this will be compared with current time in processData function
+      blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 18);
      if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
          uniSize = (hData[16] << 8) + (hData[17]);
@@ -208,6 +211,22 @@ void IRAM_ATTR readWiFiUDP() {
           #else 
           sendWS();
          #endif
+
+        //Recording to FS
+        if (uniData[511] == 201) recordPacketsCounter++;
+          else recordPacketsCounter = 0;
+        if (recordPacketsCounter > 25) {
+          writeDataPacketToFS();
+          setRecordedMode();
+          recordPacketsCounter = 0;
+        }
+
+        //Receiving packet from remote for recording
+        if (uniData[510] == 175) {
+          noSignalTime = 0; // awoid blackout
+          blackoutSetted = true; //avoid blackout
+          autoMode = 5; //switch to RECORDED mode for showing received packet
+        }
         }    
     }
 }
@@ -236,17 +255,23 @@ void processData() {
   switch (mode) {
     case 0:
       readWiFiUDP();
-      if ((millis() - noSignalTime) > NO_SIG) setStaticColor(black);
+      if (noSignalTime == 0) noSignalTime = millis();
+      if (((millis() - noSignalTime) > NO_SIG) && !blackoutSetted) {
+        setStaticColor(black);
+        blackoutSetted = true;
+      }
       break;
     case 1:
       readEthernetUDP();
+      if (noSignalTime == 0) noSignalTime = millis();
       if ((millis() - noSignalTime) > NO_SIG) setStaticColor(black);
       break;
     case 2:
       autoModeFunc();
+      readWiFiUDP();
       break;
-    }
   }
+}
 
 void autoModeFunc() {
   if (autoMode == 0) {
@@ -260,17 +285,18 @@ void autoModeFunc() {
         case 2:
           setStaticColor(red);
           break;
-         case 3:
+        case 3:
           setStaticColor(green);
           break;
-         case 4:
+        case 4:
           setStaticColor(blue);
+          break;
+        case 5:
+          sendWS();
           break;
         }
     }
-  }
-
-
+}
 
 void sendWS() {
     for (int i = 0; i < PixelCount; i++)
@@ -279,6 +305,25 @@ void sendWS() {
         strip.SetPixelColor(i, color);
     } 
     strip.Show(); 
+}
+
+void readDataPacketFromFS() {
+  for(int i = 0; i < 511; i++) {
+    uniData[i] = EEPROM.read(i+11);
+  }
+}
+
+void writeDataPacketToFS() {
+  for(int i = 0; i < 511; i++) {
+    EEPROM.write(i+11, uniData[i]);
+  }
+  EEPROM.commit();
+}
+
+void setRecordedMode() {
+  EEPROM.write(0, 2);
+  EEPROM.write(1, 5);
+  if (EEPROM.commit()) setPin(1);
 }
 
 //OTA - Flashing over Air
@@ -331,4 +376,4 @@ void OTA_Func() {
       strip.SetPixelColor(i, color);
       strip.Show();
     }
-  }
+}
