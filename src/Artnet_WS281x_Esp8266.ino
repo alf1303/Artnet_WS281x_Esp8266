@@ -5,6 +5,7 @@
 --- Output Artnet data to ws2812/13 using NeoPixelBus library
 --- Catch one universe
 --- uses GPIO3 (RX on Esp8266) GPIO2 for other boards
+tyrtyr
 */
 
 #define FLASH_SELECT
@@ -40,8 +41,8 @@ const uint8_t autoModeCount = 5; //Number of submodes in AUTO mode (Chase, White
                                   //Change if add more submodes
 
 //Ethernet Settings
-#define IND 54 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x54}; // Last byte same as ip **************************
+#define IND 55 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x55}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = IND; //****************************
@@ -125,8 +126,8 @@ void checkStatus(){ //Gets value and sets mode variable according to it
 #endif
 
 void setup() {
-  //Serial.begin(115200);
-  //delay(10);
+  Serial.begin(115200);
+  delay(10);
   
   #ifdef FLASH_SELECT
     EEPROM.begin(10);
@@ -184,6 +185,14 @@ void ConnectEthernet() {
   ethernetUdp.begin(ARTNET_PORT); // Open ArtNet port LAN) 
   }
 
+long neww = 0;
+int testTime() {
+ long old = neww;
+        neww = millis();
+        int res = neww - old;
+        return res;
+        }
+
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readWiFiUDP() {
     if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
@@ -192,6 +201,8 @@ void IRAM_ATTR readWiFiUDP() {
          uniSize = (hData[16] << 8) + (hData[17]);
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
+         Serial.print(testTime());
+         Serial.print("  ");
          sendWS();
         }    
     }
@@ -205,6 +216,8 @@ void IRAM_ATTR readEthernetUDP() {
          uniSize = (hData[16] << 8) + (hData[17]);
          ethernetUdp.read(uniData, uniSize);
          universe = hData[14];
+         Serial.print(testTime());
+         Serial.print("  ");
          sendWS();
         }    
     }
