@@ -6,7 +6,8 @@
 --- Catch one universe
 --- uses GPIO3 (RX on Esp8266) GPIO2 for other boards
 */
-
+//
+#define CS_PIN 4 //Assign GPIO4(D2) as CS pin for ENC28j60 (default was GPIO15(D8))
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
@@ -43,8 +44,8 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define IND 54 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x54}; // Last byte same as ip **************************
+#define IND 52 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x52}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = IND; //****************************
@@ -131,13 +132,13 @@ void checkStatus(){ //Gets value and sets mode variable according to it
 void setup() {
   //Serial.begin(115200);
   //delay(10);
-  
+  UIPEthernet.init(CS_PIN); // Configures ESP8266 to use custom userdefined CS pin
   #ifdef FLASH_SELECT
     EEPROM.begin(530);
     m_button.begin();
     m_button.onPressed(onPressed);
     m_button.onPressedFor(3000, onPressedForDuration3s);
-    //Wire.begin(D2, D3);
+    //Wire.begin(D2, D3); //D2 is using for CS pin Enc28j60
     //lcd.begin();
     //lcd.backlight();
     pinMode(AUTO_LED, OUTPUT);
@@ -187,6 +188,7 @@ void ConnectEthernet() {
   ethernetUdp.begin(ARTNET_PORT); // Open ArtNet port LAN) 
 }
 
+#ifdef DROP_PACKETS
 //Return duration between current time and time in variable "newTime"
 int getTimeDuration() { 
  long old = newTime;
@@ -194,6 +196,7 @@ int getTimeDuration() {
         int res = newTime - old;
         return res;
 }
+#endif
 
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readWiFiUDP() {
