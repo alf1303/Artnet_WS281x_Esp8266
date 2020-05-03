@@ -44,8 +44,8 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define IND 52 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x52}; // Last byte same as ip **************************
+#define IND 16 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x16}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = IND; //****************************
