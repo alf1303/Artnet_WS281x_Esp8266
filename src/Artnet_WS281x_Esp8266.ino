@@ -7,16 +7,19 @@
 --- uses GPIO3 (RX on Esp8266) GPIO2 for other boards
 */
 //
-#define CS_PIN 4 //Assign GPIO4(D2) as CS pin for ENC28j60 (default was GPIO15(D8))
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
+//#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
-#include "../lib/UIPEthernet/UIPEthernet.h"
+  #ifdef LAN_MODE
+    #include "../lib/UIPEthernet/UIPEthernet.h"
+    #define CS_PIN 4 //Assign GPIO4(D2) as CS pin for ENC28j60 (default was GPIO15(D8))
+  #endif
 //#include <Wire.h> 
 //#include <LiquidCrystal_I2C.h>
 #include "helpers.h"
@@ -44,12 +47,12 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define IND 16 //************************************
+#define UNI 16 //************************************
 const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x16}; // Last byte same as ip **************************
 
 //Wifi Settings
-const uint8_t startUniverse = IND; //****************************
-IPAddress ip(2, 0, 0, IND); //IP ADDRESS NODEMCU ****************
+const uint8_t startUniverse = UNI; //****************************
+IPAddress ip(2, 0, 0, UNI); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* ssid = "ANetEsp"; //SSID 
@@ -57,7 +60,9 @@ const char* password = "ktulhu_1234"; //PASSW
 
 //UDP Settings
 WiFiUDP wifiUdp;
-EthernetUDP ethernetUdp;
+  #ifdef LAN_MODE
+    EthernetUDP ethernetUdp;
+  #endif
 uint8_t uniData[514]; uint16_t uniSize; uint8_t net = 0; uint8_t universe; uint8_t subnet = 0;
 uint8_t hData[ARTNET_HEADER + 1];
 
@@ -132,7 +137,9 @@ void checkStatus(){ //Gets value and sets mode variable according to it
 void setup() {
   Serial.begin(115200);
   delay(10);
-  UIPEthernet.init(CS_PIN); // Configures ESP8266 to use custom userdefined CS pin
+    #ifdef LAN_MODE
+      UIPEthernet.init(CS_PIN); // Configures ESP8266 to use custom userdefined CS pin
+    #endif
   #ifdef FLASH_SELECT
     EEPROM.begin(530);
     m_button.begin();
@@ -146,10 +153,14 @@ void setup() {
   pinMode(STATUS_LED, OUTPUT);
   pinMode(MODE_PIN, INPUT);
   checkStatus(); //Set mode by changing value of variable <mode>
-  if (mode == STATUS_LAN) 
-    {ConnectEthernet();}
-      else 
-        {ConnectWifi();}
+    #ifdef LAN_MODE
+      if (mode == STATUS_LAN) 
+        {ConnectEthernet();}
+          else 
+            {ConnectWifi();}
+    #else
+      ConnectWifi();
+    #endif
   setStatusLed(mode);
   strip.Begin();
   OTA_Func();
@@ -182,11 +193,13 @@ boolean ConnectWifi(void) {
   return state;
 }
 
+#ifdef LAN_MODE
 //connect Ethernet
 void ConnectEthernet() {
   Ethernet.begin(mac,ip, dns, gateway, subnet_ip);
   ethernetUdp.begin(ARTNET_PORT); // Open ArtNet port LAN) 
 }
+#endif
 
 //#ifdef DROP_PACKETS
 //Return duration between current time and time in variable "newTime"
@@ -236,6 +249,7 @@ void IRAM_ATTR readWiFiUDP() {
     }
 }
 
+#ifdef LAN_MODE
 //Reading Ethernet UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readEthernetUDP() {
     if (ethernetUdp.parsePacket() /*&& ethernetUdp.destinationIP() == ip*/) {
@@ -256,6 +270,7 @@ void IRAM_ATTR readEthernetUDP() {
         }    
     }
 }
+#endif
 
 //Choosing which readUPD function to use
 void processData() {
@@ -269,7 +284,9 @@ void processData() {
       }
       break;
     case 1:
-      readEthernetUDP();
+      #ifdef LAN_MODE
+        readEthernetUDP();
+      #endif
       if (noSignalTime == 0) noSignalTime = millis();
       if ((millis() - noSignalTime) > NO_SIG) setStaticColor(black);
       break;
