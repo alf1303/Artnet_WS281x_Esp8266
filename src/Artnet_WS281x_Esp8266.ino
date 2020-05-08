@@ -201,7 +201,8 @@ int getTimeDuration() {
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readWiFiUDP() {
     if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
-      Serial.println(getTimeDuration());//*******************************************************************
+      //Serial.print(getTimeDuration());//*******************************************************************
+      //Serial.print("ms\n"); //*****************************************************************************
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 18);
@@ -238,6 +239,8 @@ void IRAM_ATTR readWiFiUDP() {
 //Reading Ethernet UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readEthernetUDP() {
     if (ethernetUdp.parsePacket() /*&& ethernetUdp.destinationIP() == ip*/) {
+      //Serial.print(getTimeDuration());//*******************************************************************
+      //Serial.print("ms\n"); //*****************************************************************************
       noSignalTime = millis();
         ethernetUdp.read(hData, 18);
      if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
