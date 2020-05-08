@@ -130,8 +130,8 @@ void checkStatus(){ //Gets value and sets mode variable according to it
 #endif
 
 void setup() {
-  //Serial.begin(115200);
-  //delay(10);
+  Serial.begin(115200);
+  delay(10);
   UIPEthernet.init(CS_PIN); // Configures ESP8266 to use custom userdefined CS pin
   #ifdef FLASH_SELECT
     EEPROM.begin(530);
@@ -188,7 +188,7 @@ void ConnectEthernet() {
   ethernetUdp.begin(ARTNET_PORT); // Open ArtNet port LAN) 
 }
 
-#ifdef DROP_PACKETS
+//#ifdef DROP_PACKETS
 //Return duration between current time and time in variable "newTime"
 int getTimeDuration() { 
  long old = newTime;
@@ -196,11 +196,12 @@ int getTimeDuration() {
         int res = newTime - old;
         return res;
 }
-#endif
+//#endif
 
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readWiFiUDP() {
     if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
+      Serial.println(getTimeDuration());//*******************************************************************
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 18);
