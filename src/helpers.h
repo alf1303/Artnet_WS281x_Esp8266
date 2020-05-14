@@ -1,5 +1,5 @@
 #ifdef DROP_PACKETS 
-#define MIN_TIME 30 // Minimum time duration between 2 packets for allowing show packets (in milliseconds)
+#define MIN_TIME 15 // Minimum time duration between 2 packets for allowing show packets (in milliseconds) 
 #endif
 long newTime = 0; // holds time for calculating time interval between packets (for DROP_PACLETS mode)
 long noSignalTime = 0; // holds time for calculating time interval after last arrived packet (for NOSIGNAL blackout mode)

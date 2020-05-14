@@ -10,7 +10,7 @@
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
-//#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
+#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
@@ -47,8 +47,8 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 16 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x16}; // Last byte same as ip **************************
+#define UNI 53 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x53}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -214,8 +214,6 @@ int getTimeDuration() {
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readWiFiUDP() {
     if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
-      //Serial.print(getTimeDuration());//*******************************************************************
-      //Serial.print("ms\n"); //*****************************************************************************
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 18);
@@ -224,8 +222,11 @@ void IRAM_ATTR readWiFiUDP() {
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
 
+        int dur = getTimeDuration();
+        Serial.print(dur);//*********************************************************
+        Serial.print(" ms_wifi\n");//*************************************************
          #ifdef DROP_PACKETS
-         if (getTimeDuration() > MIN_TIME) sendWS();
+         if (dur > MIN_TIME) sendWS();
           #else 
           sendWS();
          #endif
@@ -253,17 +254,17 @@ void IRAM_ATTR readWiFiUDP() {
 //Reading Ethernet UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readEthernetUDP() {
     if (ethernetUdp.parsePacket() /*&& ethernetUdp.destinationIP() == ip*/) {
-      //Serial.print(getTimeDuration());//*******************************************************************
-      //Serial.print("ms\n"); //*****************************************************************************
       noSignalTime = millis();
         ethernetUdp.read(hData, 18);
      if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
          uniSize = (hData[16] << 8) + (hData[17]);
          ethernetUdp.read(uniData, uniSize);
          universe = hData[14];
-
+         int dur = getTimeDuration();
+         Serial.print(dur);//*********************************************
+         Serial.print(" ms_lan\n");//*************************************
           #ifdef DROP_PACKETS
-         if (getTimeDuration() > MIN_TIME) sendWS();
+         if (dur > MIN_TIME) sendWS();
           #else 
           sendWS();
          #endif

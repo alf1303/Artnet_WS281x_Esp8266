@@ -9,6 +9,7 @@ Use this if changing runmode should be with external button, connected to D1 (GP
 
 #define DROP_PACKETS
 Using this allow dropping packets, if interval after previous packets is less then MIN_TIME (30ms for now)
+#define MIN_TIME 15 Minimum time duration in ms between 2 received packets, when packet will be shown. (15 for Continuous mode, 30 for reduced)
 
 GENERAL INFO:
 WIFI SSID: ANetEsp
