@@ -222,9 +222,17 @@ void IRAM_ATTR readWiFiUDP() {
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
 
+         if(sizeof(uniData) == 514) { //*******************************************
+           if(uniData[509] == 255) {
+             mycounter = 0;
+           }
+         }
+
         int dur = getTimeDuration();
-        Serial.print(dur);//*********************************************************
-        Serial.print(" ms_wifi\n");//*************************************************
+
+        printf("%d  %d ms_wifi\n", mycounter, dur);//************************************
+        mycounter++;//***************************************************************
+
          #ifdef DROP_PACKETS
          if (dur > MIN_TIME) sendWS();
           #else 
@@ -260,9 +268,18 @@ void IRAM_ATTR readEthernetUDP() {
          uniSize = (hData[16] << 8) + (hData[17]);
          ethernetUdp.read(uniData, uniSize);
          universe = hData[14];
+
+        if(sizeof(uniData) == 514) { //*******************************************
+           if(uniData[509] == 255) {
+             mycounter = 0;
+           }
+         }
+
          int dur = getTimeDuration();
-         Serial.print(dur);//*********************************************
-         Serial.print(" ms_lan\n");//*************************************
+
+         Serial.printf("%d  %d ms_lan\n", mycounter, dur);//***********************************
+         mycounter++;//********************************************************************
+
           #ifdef DROP_PACKETS
          if (dur > MIN_TIME) sendWS();
           #else 
