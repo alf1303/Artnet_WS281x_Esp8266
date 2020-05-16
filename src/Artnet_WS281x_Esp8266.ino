@@ -9,6 +9,7 @@
 //
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
+#define DEBUGMODE
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
 #define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
@@ -47,16 +48,18 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 53 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x53}; // Last byte same as ip **************************
+#define UNI 28 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x28}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
 IPAddress ip(2, 0, 0, UNI); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
-const char* ssid = "ANetEsp"; //SSID 
-const char* password = "ktulhu_1234"; //PASSW 
+const char* ssid = "udp"; //SSID 
+const char* password = "esp18650"; //PASSW 
+//const char* ssid = "ANetEsp"; //SSID 
+//const char* password = "ktulhu_1234"; //PASSW 
 
 //UDP Settings
 WiFiUDP wifiUdp;
@@ -70,7 +73,7 @@ uint8_t hData[ARTNET_HEADER + 1];
 const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫХ ПИКСЕЛЕЙ В ЛЕНТЕ 
 const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
 const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
-NeoPixelBus<NeoRgbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
 
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 HslColor chaseColor;  // for CHASE submode of AUTO mode
@@ -221,18 +224,18 @@ void IRAM_ATTR readWiFiUDP() {
          uniSize = (hData[16] << 8) + (hData[17]);
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
+         int dur = getTimeDuration();
 
+#ifdef DEBUGMODE
          if(sizeof(uniData) == 514) { //*******************************************
            if(uniData[509] == 255) {
              mycounter = 0;
            }
          }
 
-        int dur = getTimeDuration();
-
         printf("%d  %d ms_wifi\n", mycounter, dur);//************************************
         mycounter++;//***************************************************************
-
+#endif
          #ifdef DROP_PACKETS
          if (dur > MIN_TIME) sendWS();
           #else 
@@ -268,18 +271,17 @@ void IRAM_ATTR readEthernetUDP() {
          uniSize = (hData[16] << 8) + (hData[17]);
          ethernetUdp.read(uniData, uniSize);
          universe = hData[14];
+         int dur = getTimeDuration();
 
+#ifdef DEBUGMODE
         if(sizeof(uniData) == 514) { //*******************************************
            if(uniData[509] == 255) {
              mycounter = 0;
            }
          }
-
-         int dur = getTimeDuration();
-
          Serial.printf("%d  %d ms_lan\n", mycounter, dur);//***********************************
          mycounter++;//********************************************************************
-
+#endif
           #ifdef DROP_PACKETS
          if (dur > MIN_TIME) sendWS();
           #else 
