@@ -12,8 +12,8 @@ Using this allow dropping packets, if interval after previous packets is less th
 #define MIN_TIME 15 Minimum time duration in ms between 2 received packets, when packet will be shown. (15 for Continuous mode, 30 for reduced)
 
 GENERAL INFO:
-WIFI SSID: ANetEsp
-WIFI PASSWORD: ktulhu_1234
+WIFI SSID: udp
+WIFI PASSWORD: esp18650
 Router IP Address: 2.0.0.101
 Nodes IP Address range: 2.0.0.21 - 2.0.0.63
 Nodes works in unicast mode ONLY
