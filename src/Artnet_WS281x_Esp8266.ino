@@ -6,7 +6,7 @@
 --- Catch one universe
 --- uses GPIO3 (RX on Esp8266) GPIO2 for other boards
 */
-//
+#define VERSION "v_0.5.0"
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
 #define ADV_DEBUG
@@ -174,6 +174,8 @@ void checkStatus(){ //Gets value and sets mode variable according to it
 void setup() {
   Serial.begin(115200);
   delay(10);
+  Serial.println();
+  printf("Version: %s\n", VERSION);
     #ifdef LAN_MODE
       UIPEthernet.init(CS_PIN); // Configures ESP8266 to use custom userdefined CS pin
     #endif
@@ -290,16 +292,24 @@ void IRAM_ATTR readWiFiUDP() {
 #ifdef DEBUGMODE
          if(sizeof(uniData) == 514) { //*******************************************
            if(uniData[509] == 255) {
-             mycounter = 0;
+             mycounter = -1;
            }
          }
-
-        printf("%d  %d ms_wifi", mycounter, dur);//************************************
         //printf(" ** p_len: %d ** 358: %d\n", uniSize, uniData[357]);
         mycounter++;//***************************************************************
 #endif
          #ifdef DROP_PACKETS
-         if (dur > MIN_TIME) sendWS();
+         if (dur > MIN_TIME) {
+          #ifdef DEBUGMODE
+            printf("%d  %d ms_wifi", mycounter, dur);//************************************
+          #endif
+           sendWS();
+         }
+         else {
+          #ifdef DEBUGMODE
+            printf("Dropped: %dms\n", dur);
+          #endif
+         }
           #else 
           sendWS();
          #endif

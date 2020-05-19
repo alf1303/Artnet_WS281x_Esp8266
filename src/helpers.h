@@ -5,7 +5,7 @@ long newTime = 0; // holds time for calculating time interval between packets (f
 long noSignalTime = 0; // holds time for calculating time interval after last arrived packet (for NOSIGNAL blackout mode)
 bool blackoutSetted = false; // used for avoiding blackout if no signal, when in RECORDED mode
 int recordPacketsCounter = 0; // counting packets for allow saving received packet into FS (for avoiding signal noise issues)
-int mycounter = 0; //counter of packets, need only for debugging and testing for printing in readWiFIUdp and readEthernetUdp methods
+int mycounter = -1; //counter of packets, need only for debugging and testing for printing in readWiFIUdp and readEthernetUdp methods
 
 // ARTNET CODES
 #define ARTNET_DATA 0x50
