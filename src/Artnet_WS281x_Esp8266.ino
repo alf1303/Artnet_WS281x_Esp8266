@@ -1,4 +1,5 @@
 /*  platformio run -t upload --upload-port 2.0.0.51
+//beacon interval an DTIM
 
 --- Receiving ArtNet over WiFi using Esp8266
 --- Receiving ArtNet over Ethernet using Enc28j60, connected to Esp8266
@@ -51,8 +52,8 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 28 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x28}; // Last byte same as ip **************************
+#define UNI 21 //************************************
+const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x21}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -208,6 +209,7 @@ void setup() {
 }
 
 void loop() { 
+  //Serial.println(WiFi.getPhyMode());
   #ifdef FLASH_SELECT
     m_button.read();
   #endif
@@ -220,7 +222,9 @@ boolean ConnectWifi(void) {
   boolean state = true;
   int i = 0;
   WiFi.config(ip, gateway, subnet_ip);
+  WiFi.setPhyMode(WIFI_PHY_MODE_11N);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  WiFi.enableAP(0);
   WiFi.begin(ssid, password);
   Serial.printf("Connecting to WiFi. SSID: %s\n", ssid);
   while (WiFi.status() != WL_CONNECTED) {
