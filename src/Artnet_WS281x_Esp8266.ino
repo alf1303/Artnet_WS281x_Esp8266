@@ -9,6 +9,7 @@
 //
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
+#define ADV_DEBUG
 #define DEBUGMODE
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
 #define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
@@ -48,8 +49,8 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 26 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x26}; // Last byte same as ip **************************
+#define UNI 70 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x70}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -82,7 +83,12 @@ HslColor chaseColor;  // for CHASE submode of AUTO mode
 //LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 //Sets status led to show current mode (OFF - WIFI, ON - LAN) !val becouse ESP sets incorrect (inverted)
-void setStatusLed(int val) { digitalWrite(STATUS_LED, !val); }
+void setStatusLed(int val) { 
+  digitalWrite(STATUS_LED, !val); 
+#ifdef ADV_DEBUG
+  printf("**** set STATUS_LED: %d\n", val);
+#endif
+  }
 
 void checkStatus(){ //Gets value and sets mode variable according to it
   #ifdef FLASH_SELECT //FLASH SELECT
@@ -102,6 +108,10 @@ void checkStatus(){ //Gets value and sets mode variable according to it
           else 
             {mode = STATUS_LAN;}
   #endif
+#ifdef ADV_DEBUG
+  printf("**** readedMODE: %s, readedAUTOMODE: %s\n", convertModes(readMode), convertAutoModes(readAutoMode));
+  printf("**** MODE: %s, AUTOMODE: %s\n", convertModes(mode), convertAutoModes(autoMode));
+#endif
 }
 
 #ifdef FLASH_SELECT
@@ -113,6 +123,14 @@ void checkStatus(){ //Gets value and sets mode variable according to it
         EEPROM.write(0, ledmod);
       if(EEPROM.commit()) {
         setStatusLed(ledmod);
+          #ifdef ADV_DEBUG
+            printf("**** nextMODE: %s\n", convertModes(ledmod));
+          #endif
+      }
+      else {
+          #ifdef ADV_DEBUG
+            printf("xxxx error_FS nextMODE: %s\n", convertModes(ledmod));
+          #endif
       }
     }
     else {
@@ -120,6 +138,14 @@ void checkStatus(){ //Gets value and sets mode variable according to it
       if (autoMode > 5) autoMode = 0;
       EEPROM.write(1, autoMode);
       if(EEPROM.commit()) {
+        #ifdef ADV_DEBUG
+            printf("**** nextAUTOMODE: %s\n", convertAutoModes(autoMode));
+        #endif
+      }
+      else {
+        #ifdef ADV_DEBUG
+            printf("xxxx error_FS nextAUTOMODE: %s\n", convertAutoModes(autoMode));
+        #endif
       }
     }
   }
@@ -133,7 +159,15 @@ void checkStatus(){ //Gets value and sets mode variable according to it
         if(EEPROM.commit()) {
           if (temp == 2) setPin(1);
           if (temp == 0) setPin(0);
+          #ifdef ADV_DEBUG
+            printf("**** _press_ nextMode: %s\n", convertModes(temp));
+          #endif
         } 
+        else {
+          #ifdef ADV_DEBUG
+            printf("xxxx _press_ error_FS nextMode: %s\n", convertModes(temp));
+          #endif
+        }
     }
 #endif
 
@@ -184,24 +218,50 @@ boolean ConnectWifi(void) {
   WiFi.config(ip, gateway, subnet_ip);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   WiFi.begin(ssid, password);
+  Serial.printf("Connecting to WiFi. SSID: %s\n", ssid);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-   // Serial.print(".");
-   if (i > 16){              // Wait 8s for connecting to WiFI
+    Serial.print(".");
+   if (i > 10){              // Wait 8s for connecting to WiFI
     state = false;
       break;
     }
     i++;
   }
-  if (state) wifiUdp.begin(ARTNET_PORT); // Open ArtNet port for WIFI
+  if (state) {
+    int res = wifiUdp.begin(ARTNET_PORT);
+    #ifdef ADV_DEBUG
+        if (res == 1) printf("**** Opened UDP socket (WIFI) on port :%d\n", ARTNET_PORT);
+        if (res == 0) printf("xxxx error opening UDP(WIFI)(no available sockets)\n");
+    #endif
+  } // Open ArtNet port for WIFI
+  #ifdef ADV_DEBUG
+    if(WiFi.status() == 3) { 
+      Serial.print("**** Connected. IP: ");
+      Serial.print(WiFi.localIP());
+      Serial.println();
+      }
+      else  {
+        Serial.print("xxxx error connection to WIFI: ");
+        Serial.print(WiFi.status());
+        Serial.println();
+      }
+  #endif
   return state;
 }
 
 #ifdef LAN_MODE
 //connect Ethernet
 void ConnectEthernet() {
+  #ifdef ADV_DEBUG
+    printf("Connecting to LAN\n");
+  #endif
   Ethernet.begin(mac,ip, dns, gateway, subnet_ip);
-  ethernetUdp.begin(ARTNET_PORT); // Open ArtNet port LAN) 
+  int res = ethernetUdp.begin(ARTNET_PORT); // Open ArtNet port LAN) 
+      #ifdef ADV_DEBUG
+        if (res == 1) printf("**** Opened UDP socket (LAN) on port :%d\n", ARTNET_PORT);
+        if (res == 0) printf("xxxx error opening UDP (LAN)(no available sockets)\n");
+      #endif
 }
 #endif
 
