@@ -5,6 +5,8 @@
 --- Output Artnet data to ws2812/13 using NeoPixelBus library
 --- Catch one universe
 --- uses GPIO3 (RX on Esp8266) GPIO2 for other boards
+
+//WRiting to ws - ~418mcrsec
 */
 #define VERSION "v_0.5.0"
 #define FLASH_SELECT
@@ -49,8 +51,8 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 70 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x70}; // Last byte same as ip **************************
+#define UNI 28 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x28}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -279,6 +281,7 @@ int getTimeDuration() {
 
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void IRAM_ATTR readWiFiUDP() {
+  //printf("$$$$$$$$\n");
     if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
@@ -301,9 +304,11 @@ void IRAM_ATTR readWiFiUDP() {
          #ifdef DROP_PACKETS
          if (dur > MIN_TIME) {
           #ifdef DEBUGMODE
-            printf("%d  %d ms_wifi", mycounter, dur);//************************************
+            printf("%d  %d ms_wifi\n", mycounter, dur);//************************************
           #endif
+          //long oldd = micros();
            sendWS();
+           //printf("wsTime: %d\n", micros() - oldd);
          }
          else {
           #ifdef DEBUGMODE
