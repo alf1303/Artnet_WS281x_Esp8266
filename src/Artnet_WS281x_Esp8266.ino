@@ -48,8 +48,8 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 160 //************************************
-const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0xFF}; // Last byte same as ip **************************
+#define UNI 26 //************************************
+const byte mac[] = { 0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x26}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -234,7 +234,8 @@ void IRAM_ATTR readWiFiUDP() {
            }
          }
 
-        printf("%d  %d ms_wifi\n", mycounter, dur);//************************************
+        printf("%d  %d ms_wifi", mycounter, dur);//************************************
+        //printf(" ** p_len: %d ** 358: %d\n", uniSize, uniData[357]);
         mycounter++;//***************************************************************
 #endif
          #ifdef DROP_PACKETS
