@@ -10,6 +10,8 @@
 //WRiting to ws - ~418mcrsec
 */
 #define VERSION "v_0.5.0"
+//#define NO_WS
+//#define NO_ARTNET
 #define FLASH_SELECT
 //#define EXTERNAL_SELECT
 #define ADV_DEBUG
@@ -40,7 +42,6 @@
       digitalWrite(AUTO_LED, !state);
     }
   #endif
-  
 
 //Button Settings
 #define MODE_PIN 5 //pin for changing mode (LOW - WIFI, HIGH - LAN) with external button
@@ -78,13 +79,13 @@ const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫ�
 const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
 const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
+//NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart1800KbpsMethod> strip(PixelCount, PixelPin);
 
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 HslColor chaseColor;  // for CHASE submode of AUTO mode
 
 //LCD Settings
 //LiquidCrystal_I2C lcd(0x27, 16, 2);
-
 //Sets status led to show current mode (OFF - WIFI, ON - LAN) !val becouse ESP sets incorrect (inverted)
 void setStatusLed(int val) { 
   digitalWrite(STATUS_LED, !val); 
@@ -210,11 +211,15 @@ void setup() {
 
 void loop() { 
   //Serial.println(WiFi.getPhyMode());
+
   #ifdef FLASH_SELECT
     m_button.read();
   #endif
-  ArduinoOTA.handle();
+      ArduinoOTA.handle();
+  #ifndef NO_ARTNET
     processData();
+  #endif
+
 }
 
 // connect to wifi
@@ -222,8 +227,9 @@ boolean ConnectWifi(void) {
   boolean state = true;
   int i = 0;
   WiFi.config(ip, gateway, subnet_ip);
-  WiFi.setPhyMode(WIFI_PHY_MODE_11N);
+  WiFi.setPhyMode(WIFI_PHY_MODE_11G);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  //WiFi.setOutputPower(16.4);
   WiFi.enableAP(0);
   WiFi.begin(ssid, password);
   Serial.printf("Connecting to WiFi. SSID: %s\n", ssid);
@@ -236,6 +242,7 @@ boolean ConnectWifi(void) {
     }
     i++;
   }
+  printf("Connected\n");
   if (state) {
     int res = wifiUdp.begin(ARTNET_PORT);
     #ifdef ADV_DEBUG
@@ -290,6 +297,7 @@ void IRAM_ATTR readWiFiUDP() {
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 18);
+        //printf("Uni: %d\n", hData[14]);
      if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
          uniSize = (hData[16] << 8) + (hData[17]);
          wifiUdp.read(uniData, uniSize);
@@ -311,7 +319,9 @@ void IRAM_ATTR readWiFiUDP() {
             printf("%d  %d ms_wifi\n", mycounter, dur);//************************************
           #endif
           //long oldd = micros();
-           sendWS();
+           #ifndef NO_WS
+            sendWS();
+           #endif
            //printf("wsTime: %d\n", micros() - oldd);
          }
          else {
@@ -320,7 +330,9 @@ void IRAM_ATTR readWiFiUDP() {
           #endif
          }
           #else 
-          sendWS();
+            #ifndef NO_WS
+              sendWS();
+            #endif
          #endif
 
         //Recording to FS
