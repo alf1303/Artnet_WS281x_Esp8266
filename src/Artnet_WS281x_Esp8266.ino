@@ -53,7 +53,7 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 28 //************************************
+#define UNI 21 //************************************
 const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x21}; // Last byte same as ip **************************
 
 //Wifi Settings
@@ -316,22 +316,25 @@ void readWiFiUDP() {
          #ifdef DROP_PACKETS
          if (dur > MIN_TIME) {
           #ifdef DEBUGMODE
-            printf("%d  %d ms_wifi\n", mycounter, dur);//************************************
+            printf("%d  %d ms_wifi ** ", mycounter, dur);//************************************
           #endif
-          //long oldd = micros();
            #ifndef NO_WS
+            long oldd = micros();
             sendWS();
+            printf("wsTime: %d\n", micros() - oldd);
            #endif
-           //printf("wsTime: %d\n", micros() - oldd);
+           
          }
          else {
           #ifdef DEBUGMODE
-            printf("Dropped: %dms\n", dur);
+            printf("%d Dropped: %dms\n", mycounter, dur);
           #endif
          }
           #else 
             #ifndef NO_WS
+              long oldd = micros();
               sendWS();
+              printf("%d %d ms_wifi ** wsTime: %d\n", mycounter, dur, micros() - oldd);
             #endif
          #endif
 
