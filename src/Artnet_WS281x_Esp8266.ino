@@ -53,7 +53,7 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 21 //************************************
+#define UNI 28 //************************************
 const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x21}; // Last byte same as ip **************************
 
 //Wifi Settings
@@ -291,7 +291,7 @@ int getTimeDuration() {
 //#endif
 
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
-void IRAM_ATTR readWiFiUDP() {
+void readWiFiUDP() {
   //printf("$$$$$$$$\n");
     if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
       noSignalTime = millis(); //this will be compared with current time in processData function
@@ -356,7 +356,7 @@ void IRAM_ATTR readWiFiUDP() {
 
 #ifdef LAN_MODE
 //Reading Ethernet UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
-void IRAM_ATTR readEthernetUDP() {
+void readEthernetUDP() {
     if (ethernetUdp.parsePacket() /*&& ethernetUdp.destinationIP() == ip*/) {
       noSignalTime = millis();
         ethernetUdp.read(hData, 18);
