@@ -12,12 +12,12 @@
 #define VERSION "v_0.5.0"
 //#define NO_WS
 //#define NO_ARTNET
-#define FLASH_SELECT
+//#define FLASH_SELECT
 //#define EXTERNAL_SELECT
 #define ADV_DEBUG
 #define DEBUGMODE
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
-#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
+//#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
@@ -48,13 +48,13 @@
 #define STATUS_WIFI 0 
 #define STATUS_LAN 1
 #define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
-uint8_t mode; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO)
+uint8_t mode = 0; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO)
 uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 21 //************************************
-const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x21}; // Last byte same as ip **************************
+#define UNI 31 //************************************
+const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x31}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -98,7 +98,7 @@ void checkStatus(){ //Gets value and sets mode variable according to it
   #ifdef FLASH_SELECT //FLASH SELECT
     uint8_t readMode = EEPROM.read(0);
     uint8_t readAutoMode = EEPROM.read(1);
-    if ((readMode < 0) || (readMode > 2)) // if not correct values, set default - WIFI
+    if ((readMode < 0) || (readMode > 2) || (readMode == 1)) // if not correct values, set default - WIFI */*/*/**/*/*/*/*/*/*/*/*//*/*/*/*/
       mode = STATUS_WIFI;
     else  { mode = readMode;}  //Set readed value
       if (mode == 2) {setPin(1); ledautomod = 1;} // On AUTO mode led and set it indicator
@@ -106,16 +106,21 @@ void checkStatus(){ //Gets value and sets mode variable according to it
     if (readAutoMode >= autoModeCount)  autoMode = 0; // Set default if readed incorrect
     else autoMode = readAutoMode; 
     if (autoMode == 5) readDataPacketFromFS();
-  #else //EXTERNAL button select
+  #ifdef ADV_DEBUG
+    printf("**** readedMODE: %s, readedAUTOMODE: %s\n", convertModes(readMode), convertAutoModes(readAutoMode));
+    printf("**** MODE: %s, AUTOMODE: %s\n", convertModes(mode), convertAutoModes(autoMode));
+  #endif
+  #elif  EXTERNAL_SELECT//EXTERNAL button select
       if (digitalRead(MODE_PIN) == 0) 
         {mode = STATUS_WIFI;}
           else 
             {mode = STATUS_LAN;}
+      #ifdef ADV_DEBUG
+        printf("**** readedMODE: %s, readedAUTOMODE: %s\n", convertModes(readMode), convertAutoModes(readAutoMode));
+        printf("**** MODE: %s, AUTOMODE: %s\n", convertModes(mode), convertAutoModes(autoMode));
+      #endif       
   #endif
-#ifdef ADV_DEBUG
-  printf("**** readedMODE: %s, readedAUTOMODE: %s\n", convertModes(readMode), convertAutoModes(readAutoMode));
-  printf("**** MODE: %s, AUTOMODE: %s\n", convertModes(mode), convertAutoModes(autoMode));
-#endif
+
 }
 
 #ifdef FLASH_SELECT
@@ -226,23 +231,40 @@ void loop() {
 boolean ConnectWifi(void) {
   boolean state = true;
   int i = 0;
+  WiFi.persistent(false);
   WiFi.config(ip, gateway, subnet_ip);
   WiFi.setPhyMode(WIFI_PHY_MODE_11G);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   //WiFi.setOutputPower(16.4);
   WiFi.enableAP(0);
-  WiFi.begin(ssid, password);
-  Serial.printf("Connecting to WiFi. SSID: %s\n", ssid);
+  if(WiFi.SSID() == ssid && WiFi.psk() == password) {
+    printf("**** Loading WiFi settings from ROM\n");
+    WiFi.begin();
+  }
+  else {
+      printf("**** Connecting with new settings\n");
+      WiFi.begin(ssid, password);
+  }
+  Serial.printf("**** Connecting to WiFi. SSID: %s\n", ssid);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-   if (i > 10){              // Wait 8s for connecting to WiFI
+   if (i > 16){              // Wait 8s for connecting to WiFI
     state = false;
       break;
     }
     i++;
   }
-  printf("Connected\n");
+  if(!state) {
+    printf("**** Cant connect to WiFi SSID: \n");
+  }
+  else {
+    printf("**** Connected to WiFi! SSID:");
+    Serial.print(WiFi.SSID());
+    printf(" IP: ");
+    Serial.print(WiFi.localIP());
+    Serial.println();
+  }
   if (state) {
     int res = wifiUdp.begin(ARTNET_PORT);
     #ifdef ADV_DEBUG
@@ -321,7 +343,7 @@ void readWiFiUDP() {
            #ifndef NO_WS
             long oldd = micros();
             sendWS();
-            printf("wsTime: %d\n", micros() - oldd);
+            printf("wsTime: %lu\n", micros() - oldd);
            #endif
            
          }
@@ -338,6 +360,7 @@ void readWiFiUDP() {
             #endif
          #endif
 
+  #ifdef FLASH_SELECT
         //Recording to FS
         if (uniData[511] == 201) recordPacketsCounter++;
           else recordPacketsCounter = 0;
@@ -353,7 +376,8 @@ void readWiFiUDP() {
           blackoutSetted = true; //avoid blackout
           autoMode = 5; //switch to RECORDED mode for showing received packet
         }
-        }    
+  #endif
+      }    
     }
 }
 
@@ -446,7 +470,7 @@ void sendWS() {
     } 
     strip.Show(); 
 }
-
+#ifdef FLASH_SELECT
 void readDataPacketFromFS() {
   for(int i = 0; i < 511; i++) {
     uniData[i] = EEPROM.read(i+11);
@@ -465,7 +489,7 @@ void setRecordedMode() {
   EEPROM.write(1, 5);
   if (EEPROM.commit()) setPin(1);
 }
-
+#endif
 //OTA - Flashing over Air
 void OTA_Func() {
     ArduinoOTA.onStart([]() {
