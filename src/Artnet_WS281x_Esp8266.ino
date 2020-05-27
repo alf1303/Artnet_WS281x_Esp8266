@@ -517,3 +517,29 @@ void OTA_Func() {
       strip.Show();
     }
 }
+
+void test() {
+  RgbColor redd = RgbColor(30, 0, 0);
+  RgbColor grenn = RgbColor(0, 30, 0);
+  RgbColor bluee = RgbColor(0, 0, 30);
+  for(int i = 0; i < PixelCount; i++) {
+    strip.SetPixelColor(i, redd);
+  }
+  strip.Show();
+  delay(500);
+  for(int i = 0; i < PixelCount; i++) {
+    strip.SetPixelColor(i, grenn);
+  }
+  strip.Show();
+  delay(500);
+  for(int i = 0; i < PixelCount; i++) {
+    strip.SetPixelColor(i, bluee);
+  }
+  strip.Show();
+  delay(100);
+    for(int i = 0; i < PixelCount; i++) {
+    strip.SetPixelColor(i, black);
+  }
+  strip.Show();
+  delay(500);
+}
