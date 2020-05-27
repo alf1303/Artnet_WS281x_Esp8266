@@ -9,10 +9,10 @@
 
 //WRiting to ws - ~418mcrsec
 */
-#define VERSION "v_0.5.0"
+#define VERSION "v_0.5.1"
 //#define NO_WS
 //#define NO_ARTNET
-//#define FLASH_SELECT
+#define FLASH_SELECT
 //#define EXTERNAL_SELECT
 #define ADV_DEBUG
 #define DEBUGMODE
@@ -23,6 +23,7 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
+#include <Ticker.h>
   #ifdef LAN_MODE
     #include "../lib/UIPEthernet/UIPEthernet.h"
     #define CS_PIN 4 //Assign GPIO4(D2) as CS pin for ENC28j60 (default was GPIO15(D8))
@@ -53,8 +54,8 @@ uint8_t autoMode; // mode for Automatic strip control
 const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 31 //************************************
-const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x31}; // Last byte same as ip **************************
+#define UNI 35 //************************************
+const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x35}; // Last byte same as ip **************************
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -63,8 +64,7 @@ IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* ssid = "udp"; //SSID 
 const char* password = "esp18650"; //PASSW 
-//const char* ssid = "ANetEsp"; //SSID 
-//const char* password = "ktulhu_1234"; //PASSW 
+Ticker wifi_reconnect_Ticker;
 
 //UDP Settings
 WiFiUDP wifiUdp;
@@ -183,6 +183,8 @@ void checkStatus(){ //Gets value and sets mode variable according to it
 void setup() {
   Serial.begin(115200);
   delay(10);
+  strip.Begin();
+  test();
   Serial.println();
   printf("Version: %s\n", VERSION);
     #ifdef LAN_MODE
@@ -210,8 +212,8 @@ void setup() {
       ConnectWifi();
     #endif
   setStatusLed(mode);
-  strip.Begin();
   OTA_Func();
+  //wifi_reconnect_Ticker.attach_ms(5000, reconnectWiFi);
 }
 
 void loop() { 
@@ -225,6 +227,15 @@ void loop() {
     processData();
   #endif
 
+}
+
+void reconnectWiFi() {
+  int res = wifiUdp.begin(ARTNET_PORT);
+  printf("******************************** %d\n", res);
+  if (WiFi.status() != WL_CONNECTED) {
+    printf("**** Trying to reconect to wifi...\n");
+    ConnectWifi();
+  }
 }
 
 // connect to wifi
@@ -265,13 +276,12 @@ boolean ConnectWifi(void) {
     Serial.print(WiFi.localIP());
     Serial.println();
   }
-  if (state) {
+   // Open ArtNet port for WIFI
     int res = wifiUdp.begin(ARTNET_PORT);
     #ifdef ADV_DEBUG
         if (res == 1) printf("**** Opened UDP socket (WIFI) on port :%d\n", ARTNET_PORT);
         if (res == 0) printf("xxxx error opening UDP(WIFI)(no available sockets)\n");
     #endif
-  } // Open ArtNet port for WIFI
   #ifdef ADV_DEBUG
     if(WiFi.status() == 3) { 
       Serial.print("**** Connected. IP: ");
