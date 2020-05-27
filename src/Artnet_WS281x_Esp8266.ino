@@ -12,50 +12,28 @@
 #define VERSION "v_0.5.1"
 //#define NO_WS
 //#define NO_ARTNET
-#define FLASH_SELECT
+//#define FLASH_SELECT
 //#define EXTERNAL_SELECT
 #define ADV_DEBUG
 #define DEBUGMODE
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
 //#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
-#include <ESP8266WiFi.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
-#include <NeoPixelBus.h>
-#include <Ticker.h>
-  #ifdef LAN_MODE
-    #include "../lib/UIPEthernet/UIPEthernet.h"
-    #define CS_PIN 4 //Assign GPIO4(D2) as CS pin for ENC28j60 (default was GPIO15(D8))
-  #endif
-//#include <Wire.h> 
-//#include <LiquidCrystal_I2C.h>
 #include "helpers.h"
-  #ifdef FLASH_SELECT 
-    #include "../lib/EasyButton/src/EasyButton.h"
-    #include <EEPROM.h>
-    #define AUTO_LED 16 // Led indicator for autoMode (16 - built-in for NodeMCU)
-    EasyButton m_button(0); //FLASH button on NodeMCU
-    uint8_t ledmod = 112; //indicator for on/off STATUS_LED led ()
-    uint8_t ledautomod; //indicator for on/off AUTO_LED ()
-    //Set AUTO mode led
-    void setPin(int state) {
-      digitalWrite(AUTO_LED, !state);
-    }
-  #endif
-
-//Button Settings
-#define MODE_PIN 5 //pin for changing mode (LOW - WIFI, HIGH - LAN) with external button
-#define STATUS_WIFI 0 
-#define STATUS_LAN 1
-#define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
-uint8_t mode = 0; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO)
-uint8_t autoMode; // mode for Automatic strip control
-const uint8_t autoModeCount = 6; //Number of submodes in AUTO mode (Chase, White, Red, Green, Blue, Recorded for now)
 
 //Ethernet Settings
-#define UNI 35 //************************************
-const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x35}; // Last byte same as ip **************************
+#define UNI 31 //************************************
+const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x31}; // Last byte same as ip **************************
+
+long newTime = 0; // holds time for calculating time interval between packets (for DROP_PACLETS mode)
+long noSignalTime = 0; // holds time for calculating time interval after last arrived packet (for NOSIGNAL blackout mode)
+bool blackoutSetted = false; // used for avoiding blackout if no signal, when in RECORDED mode
+int recordPacketsCounter = 0; // counting packets for allow saving received packet into FS (for avoiding signal noise issues)
+int mycounter = -1; //counter of packets, need only for debugging and testing for printing in readWiFIUdp and readEthernetUdp methods
+ WiFiUDP wifiUdp;
+  #ifdef LAN_MODE
+    EthernetUDP ethernetUdp;
+  #endif
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -64,25 +42,6 @@ IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* ssid = "udp"; //SSID 
 const char* password = "esp18650"; //PASSW 
-Ticker wifi_reconnect_Ticker;
-
-//UDP Settings
-WiFiUDP wifiUdp;
-  #ifdef LAN_MODE
-    EthernetUDP ethernetUdp;
-  #endif
-uint8_t uniData[514]; uint16_t uniSize; uint8_t net = 0; uint8_t universe; uint8_t subnet = 0;
-uint8_t hData[ARTNET_HEADER + 1];
-
-// Neopixel settings
-const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫХ ПИКСЕЛЕЙ В ЛЕНТЕ 
-const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
-const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
-//NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart1800KbpsMethod> strip(PixelCount, PixelPin);
-
-float chaseHue = 0.0f; // for CHASE submode of AUTO mode
-HslColor chaseColor;  // for CHASE submode of AUTO mode
 
 //LCD Settings
 //LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -160,6 +119,7 @@ void checkStatus(){ //Gets value and sets mode variable according to it
   }
 
   void onPressedForDuration3s() {
+    printf("This should not!!!");
         uint8_t temp;
         ledautomod = !ledautomod;
         if (ledautomod) { temp = 2; }
@@ -194,6 +154,7 @@ void setup() {
     EEPROM.begin(530);
     m_button.begin();
     m_button.onPressed(onPressed);
+    //m_button.onPressedFor(5000, onPressed);
     m_button.onPressedFor(3000, onPressedForDuration3s);
     //Wire.begin(D2, D3); //D2 is using for CS pin Enc28j60
     //lcd.begin();
@@ -202,7 +163,7 @@ void setup() {
   #endif
   pinMode(STATUS_LED, OUTPUT);
   pinMode(MODE_PIN, INPUT);
-  checkStatus(); //Set mode by changing value of variable <mode>
+  //checkStatus(); //Set mode by changing value of variable <mode>
     #ifdef LAN_MODE
       if (mode == STATUS_LAN) 
         {ConnectEthernet();}
@@ -213,7 +174,6 @@ void setup() {
     #endif
   setStatusLed(mode);
   OTA_Func();
-  //wifi_reconnect_Ticker.attach_ms(5000, reconnectWiFi);
 }
 
 void loop() { 
@@ -227,15 +187,6 @@ void loop() {
     processData();
   #endif
 
-}
-
-void reconnectWiFi() {
-  int res = wifiUdp.begin(ARTNET_PORT);
-  printf("******************************** %d\n", res);
-  if (WiFi.status() != WL_CONNECTED) {
-    printf("**** Trying to reconect to wifi...\n");
-    ConnectWifi();
-  }
 }
 
 // connect to wifi
@@ -500,80 +451,6 @@ void setRecordedMode() {
   if (EEPROM.commit()) setPin(1);
 }
 #endif
-//OTA - Flashing over Air
-void OTA_Func() {
-    ArduinoOTA.onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else { // U_FS
-      type = "filesystem";
-    }
 
-    // NOTE: if updating FS this would be the place to unmount FS using FS.end()
-    Serial.println("Start updating " + type);
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) {
-      Serial.println("Auth Failed");
-    } else if (error == OTA_BEGIN_ERROR) {
-      Serial.println("Begin Failed");
-    } else if (error == OTA_CONNECT_ERROR) {
-      Serial.println("Connect Failed");
-    } else if (error == OTA_RECEIVE_ERROR) {
-      Serial.println("Receive Failed");
-    } else if (error == OTA_END_ERROR) {
-      Serial.println("End Failed");
-    }
-  });
-  ArduinoOTA.begin();
-  }
 
-    void chaserColor() {
-        chaseColor = HslColor (chaseHue, 1.0f, 0.4f);
-        for (int i = 0; i < PixelCount; i++) strip.SetPixelColor(i, chaseColor);
-        strip.Show();
-        chaseHue = chaseHue + 0.005f;
-        if (chaseHue >= 1.0) chaseHue = 0;
-        delay(100);
-    }
 
-  void setStaticColor(RgbColor color) {
-    for (int i = 0; i < PixelCount; i++) {
-      strip.SetPixelColor(i, color);
-      strip.Show();
-    }
-}
-
-void test() {
-  RgbColor redd = RgbColor(30, 0, 0);
-  RgbColor grenn = RgbColor(0, 30, 0);
-  RgbColor bluee = RgbColor(0, 0, 30);
-  for(int i = 0; i < PixelCount; i++) {
-    strip.SetPixelColor(i, redd);
-  }
-  strip.Show();
-  delay(500);
-  for(int i = 0; i < PixelCount; i++) {
-    strip.SetPixelColor(i, grenn);
-  }
-  strip.Show();
-  delay(500);
-  for(int i = 0; i < PixelCount; i++) {
-    strip.SetPixelColor(i, bluee);
-  }
-  strip.Show();
-  delay(100);
-    for(int i = 0; i < PixelCount; i++) {
-    strip.SetPixelColor(i, black);
-  }
-  strip.Show();
-  delay(500);
-}
