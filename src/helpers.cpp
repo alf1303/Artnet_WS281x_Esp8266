@@ -138,3 +138,13 @@ void OTA_Func() {
   });
   ArduinoOTA.begin();
   }
+
+  
+bool ssid_selector(uint8_t uni) {
+  if (uni <= 30) {
+    return false;
+  }
+  else {
+    return true;
+  }
+}

@@ -9,7 +9,7 @@
 
 //WRiting to ws - ~418mcrsec
 */
-#define VERSION "v_0.5.1"
+#define VERSION "v_0.5.2"
 //#define NO_WS
 //#define NO_ARTNET
 //#define FLASH_SELECT
@@ -22,11 +22,16 @@
 #include "helpers.h"
 
 //Ethernet Settings
-#define UNI 31 //************************************
-const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x31}; // Last byte same as ip **************************
+#define UNI 29 //************************************
+const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x29}; // Last byte same as ip **************************
+//const char* ssid; //SSID 
+const char* ssid1 = (char*)"udp";
+const char* ssid2 = (char*)"udp2";
+//Ticker wifi_ticker;
+bool sel_ssid2;
 
 long newTime = 0; // holds time for calculating time interval between packets (for DROP_PACLETS mode)
-long noSignalTime = 0; // holds time for calculating time interval after last arrived packet (for NOSIGNAL blackout mode)
+long noSignalTime = 0; // holds time for calculating cctime interval after last arrived packet (for NOSIGNAL blackout mode)
 bool blackoutSetted = false; // used for avoiding blackout if no signal, when in RECORDED mode
 int recordPacketsCounter = 0; // counting packets for allow saving received packet into FS (for avoiding signal noise issues)
 int mycounter = -1; //counter of packets, need only for debugging and testing for printing in readWiFIUdp and readEthernetUdp methods
@@ -40,7 +45,6 @@ const uint8_t startUniverse = UNI; //****************************
 IPAddress ip(2, 0, 0, UNI); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
-const char* ssid = "udp"; //SSID 
 const char* password = "esp18650"; //PASSW 
 
 //LCD Settings
@@ -168,12 +172,26 @@ void setup() {
       if (mode == STATUS_LAN) 
         {ConnectEthernet();}
           else 
-            {ConnectWifi();}
+            {ConnectWifi(ssid1);}
     #else
-      ConnectWifi();
+      ConnectWifi(ssid1);
     #endif
   setStatusLed(mode);
   OTA_Func();
+  //wifi_ticker.attach_ms(5000, tickFunc);
+}
+
+void tickFunc() {
+  //printf("WiFi status: %d\n", WiFi.status());
+  if(WiFi.status() != 3) {
+    if(sel_ssid2) {
+      ConnectWifi(ssid1);
+    }
+    else {
+      ConnectWifi(ssid2);
+    }
+    sel_ssid2 = !sel_ssid2;
+  }
 }
 
 void loop() { 
@@ -190,14 +208,14 @@ void loop() {
 }
 
 // connect to wifi
-boolean ConnectWifi(void) {
+boolean ConnectWifi(const char *ssid) {
   boolean state = true;
   int i = 0;
   WiFi.persistent(false);
   WiFi.config(ip, gateway, subnet_ip);
   WiFi.setPhyMode(WIFI_PHY_MODE_11G);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  //WiFi.setOutputPower(16.4);
+  WiFi.setOutputPower(10.0); //16.4 20max
   WiFi.enableAP(0);
   if(WiFi.SSID() == ssid && WiFi.psk() == password) {
     printf("**** Loading WiFi settings from ROM\n");
@@ -209,9 +227,9 @@ boolean ConnectWifi(void) {
   }
   Serial.printf("**** Connecting to WiFi. SSID: %s\n", ssid);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(250);
     Serial.print(".");
-   if (i > 16){              // Wait 8s for connecting to WiFI
+   if (i > 30){              // Wait 8s for connecting to WiFI
     state = false;
       break;
     }
@@ -276,7 +294,7 @@ int getTimeDuration() {
 //Reading WiFi UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
 void readWiFiUDP() {
   //printf("$$$$$$$$\n");
-    if (wifiUdp.parsePacket() && wifiUdp.destinationIP() == ip) {
+    if (wifiUdp.parsePacket()){//&& wifiUdp.destinationIP() == ip) {
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 18);

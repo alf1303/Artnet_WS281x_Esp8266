@@ -2,7 +2,8 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
-
+//#include "Ticker.h"
+//extern Ticker wifi_ticker;
 #ifdef DROP_PACKETS 
 #define MIN_TIME 15 // Minimum time duration between 2 packets for allowing show packets (in milliseconds) 
 #endif
@@ -70,3 +71,4 @@ void chaserColor();
 void setStaticColor(RgbColor);
 void test();
 void OTA_Func();
+//bool ssid_selector(uint8_t uni);
