@@ -189,7 +189,7 @@ void readWiFiUDP() {
 
 //Choosing which readUPD function to use
 void processData() {
-  switch (mode) {
+  switch (settings.mode) {
     case 0:
       readWiFiUDP();
       if (noSignalTime == 0) noSignalTime = millis();
@@ -215,9 +215,9 @@ void processData() {
 }
 
 void autoModeFunc() {
-      switch (autoMode) {
+      switch (settings.autoMode) {
         case 0:
-          setStaticColor(readedRGB);
+          setStaticColor(settings.readedRGB);
           break;
         case 1:
           chasePlayer();

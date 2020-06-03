@@ -1,9 +1,18 @@
 #include "helpers.h"
-uint8_t mode = 0; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
-uint8_t autoMode = 0; // mode for Automatic strip control
-uint8_t speed = 0; //speed for playing effects from FS
-uint8_t chaseNum = 0;
-uint8_t recordedEffNum = 0;
+// uint8_t mode = 0; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
+// uint8_t autoMode = 0; // mode for Automatic strip control
+// uint8_t speed = 0; //speed for playing effects from FS
+// uint8_t chaseNum = 0;
+// uint8_t recordedEffNum = 0;
+settings_t settings = {
+  mode : 0, // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
+  autoMode : 0, // mode for Automatic strip control
+  speed : 0, //speed for playing effects from FS
+  readedRGB : blue, //color for static automode
+  chaseNum : 0, //number of internal chase
+  recordedEffNum : 0 //number of recorded effect
+};
+
 
 //NEOPIXEL Variables
 RgbColor red(colorSaturation, 0, 0);
@@ -11,7 +20,6 @@ RgbColor green(0, colorSaturation, 0);
 RgbColor blue(0, 0, colorSaturation);
 RgbColor white(colorSaturation);
 RgbColor black(0);
-RgbColor readedRGB = blue;
 HslColor chaseColor;  // for CHASE submode of AUTO mode
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
@@ -33,13 +41,13 @@ void initModes() {
     } 
     else {
       printf("**** mode_file opened. Writing...\n");
-      f.write(mode);
-      f.write(autoMode);
+      f.write(settings.mode);
+      f.write(settings.autoMode);
       f.write(0);
-      f.write(speed);
-      f.write(readedRGB.R);
-      f.write(readedRGB.G);
-      f.write(readedRGB.B);
+      f.write(settings.speed);
+      f.write(settings.readedRGB.R);
+      f.write(settings.readedRGB.G);
+      f.write(settings.readedRGB.B);
       delay(50);
       f.close();
     }
@@ -47,14 +55,15 @@ void initModes() {
   else {
     printf("Reading values from mode_file\n");
     File f = LittleFS.open(FILE_MODES, "r");
+    printf("File length: %d\n", f.size());
     uint8_t temp[7];
     f.read(temp, 7);
-    mode = temp[0];
-    autoMode = temp[1];
-    if(autoMode == 1) chaseNum = temp[2];
-    if(autoMode == 2) recordedEffNum = temp[2];
-    speed = temp[3];
-    readedRGB = RgbColor(temp[4], temp[5], temp[6]);
+    settings.mode = temp[0];
+    settings.autoMode = temp[1];
+    if(settings.autoMode == 1) settings.chaseNum = temp[2];
+    if(settings.autoMode == 2) settings.recordedEffNum = temp[2];
+    settings.speed = temp[3];
+    settings.readedRGB = RgbColor(temp[4], temp[5], temp[6]);
     f.close();
     printf("Writed!\n");
   }
