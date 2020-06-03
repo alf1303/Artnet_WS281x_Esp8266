@@ -1,12 +1,17 @@
 #include "helpers.h"
-uint8_t mode; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO)
-uint8_t autoMode; // mode for Automatic strip control
+uint8_t mode = 0; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
+uint8_t autoMode = 0; // mode for Automatic strip control
+uint8_t speed = 0; //speed for playing effects from FS
+uint8_t chaseNum = 0;
+uint8_t recordedEffNum = 0;
+
 //NEOPIXEL Variables
 RgbColor red(colorSaturation, 0, 0);
 RgbColor green(0, colorSaturation, 0);
 RgbColor blue(0, 0, colorSaturation);
 RgbColor white(colorSaturation);
 RgbColor black(0);
+RgbColor readedRGB = blue;
 HslColor chaseColor;  // for CHASE submode of AUTO mode
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
@@ -18,6 +23,50 @@ uint16_t uniSize;
 uint8_t universe; 
 //uint8_t subnet = 0;
 uint8_t hData[ARTNET_HEADER + 1];
+
+void initModes() {
+  if(!LittleFS.exists(FILE_MODES)) {
+    printf("**** Mode_file not exists, creating...\n");
+    File f = LittleFS.open(FILE_MODES, "w+");
+    if (!f) {
+      printf("**** Open mode_file for writing fails\n");
+    } 
+    else {
+      printf("**** mode_file opened. Writing...\n");
+      f.write(mode);
+      f.write(autoMode);
+      f.write(0);
+      f.write(speed);
+      f.write(readedRGB.R);
+      f.write(readedRGB.G);
+      f.write(readedRGB.B);
+      delay(50);
+      f.close();
+    }
+  }
+  else {
+    printf("Reading values from mode_file\n");
+    File f = LittleFS.open(FILE_MODES, "r");
+    uint8_t temp[7];
+    f.read(temp, 7);
+    mode = temp[0];
+    autoMode = temp[1];
+    if(autoMode == 1) chaseNum = temp[2];
+    if(autoMode == 2) recordedEffNum = temp[2];
+    speed = temp[3];
+    readedRGB = RgbColor(temp[4], temp[5], temp[6]);
+    f.close();
+    printf("Writed!\n");
+  }
+}
+
+void chasePlayer() {
+
+}
+
+void effectPlayer() {
+
+}
 
 char* convertModes(int mod) {
     switch (mod)
@@ -31,6 +80,9 @@ char* convertModes(int mod) {
     case 2:
         return (char *)"AutoMode";
         break;
+    case 3:
+        return (char*) "FixtMode";
+        break;
     default:
         return (char *)"ErrorMode";
         break;
@@ -41,22 +93,16 @@ char* convertAutoModes(int automod)  {
     switch (automod)
     {
     case 0:
-        return (char *)"CHASE";
+        return (char *)"STATIC";
         break;
     case 1:
-        return (char *)"WHITE";
+        return (char *)"CHASE";
         break;
     case 2:
-        return (char *)"RED";
-        break;
-    case 3:
-        return (char *)"GREEN";
-        break;
-    case 4:
-        return (char *)"BLUE";
+        return (char *)"RECORDED";
         break;
     default:
-        return (char *)"ErrorMode";
+        return (char*)"AutoModError";
         break;
     }
 }
@@ -138,13 +184,3 @@ void OTA_Func() {
   });
   ArduinoOTA.begin();
   }
-
-  
-bool ssid_selector(uint8_t uni) {
-  if (uni <= 30) {
-    return false;
-  }
-  else {
-    return true;
-  }
-}

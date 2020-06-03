@@ -12,23 +12,17 @@
 #define VERSION "v_0.5.2"
 //#define NO_WS
 //#define NO_ARTNET
-//#define FLASH_SELECT
-//#define EXTERNAL_SELECT
 #define ADV_DEBUG
 #define DEBUGMODE
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
-//#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #include "helpers.h"
 
 //Ethernet Settings
-#define UNI 29 //************************************
-const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x29}; // Last byte same as ip **************************
+#define UNI 33 //************************************
 //const char* ssid; //SSID 
 const char* ssid1 = (char*)"udp";
-const char* ssid2 = (char*)"udp2";
 //Ticker wifi_ticker;
-bool sel_ssid2;
 
 long newTime = 0; // holds time for calculating time interval between packets (for DROP_PACLETS mode)
 long noSignalTime = 0; // holds time for calculating cctime interval after last arrived packet (for NOSIGNAL blackout mode)
@@ -36,9 +30,6 @@ bool blackoutSetted = false; // used for avoiding blackout if no signal, when in
 int recordPacketsCounter = 0; // counting packets for allow saving received packet into FS (for avoiding signal noise issues)
 int mycounter = -1; //counter of packets, need only for debugging and testing for printing in readWiFIUdp and readEthernetUdp methods
  WiFiUDP wifiUdp;
-  #ifdef LAN_MODE
-    EthernetUDP ethernetUdp;
-  #endif
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -47,9 +38,6 @@ IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* password = "esp18650"; //PASSW 
 
-//LCD Settings
-//LiquidCrystal_I2C lcd(0x27, 16, 2);
-//Sets status led to show current mode (OFF - WIFI, ON - LAN) !val becouse ESP sets incorrect (inverted)
 void setStatusLed(int val) { 
   digitalWrite(STATUS_LED, !val); 
 #ifdef ADV_DEBUG
@@ -57,154 +45,26 @@ void setStatusLed(int val) {
 #endif
   }
 
-void checkStatus(){ //Gets value and sets mode variable according to it
-  #ifdef FLASH_SELECT //FLASH SELECT
-    uint8_t readMode = EEPROM.read(0);
-    uint8_t readAutoMode = EEPROM.read(1);
-    if ((readMode < 0) || (readMode > 2) || (readMode == 1)) // if not correct values, set default - WIFI */*/*/**/*/*/*/*/*/*/*/*//*/*/*/*/
-      mode = STATUS_WIFI;
-    else  { mode = readMode;}  //Set readed value
-      if (mode == 2) {setPin(1); ledautomod = 1;} // On AUTO mode led and set it indicator
-      else {setPin(0); ledautomod = 0;} // Off AUTO mode led and set it indicator
-    if (readAutoMode >= autoModeCount)  autoMode = 0; // Set default if readed incorrect
-    else autoMode = readAutoMode; 
-    if (autoMode == 5) readDataPacketFromFS();
-  #ifdef ADV_DEBUG
-    printf("**** readedMODE: %s, readedAUTOMODE: %s\n", convertModes(readMode), convertAutoModes(readAutoMode));
-    printf("**** MODE: %s, AUTOMODE: %s\n", convertModes(mode), convertAutoModes(autoMode));
-  #endif
-  #elif  EXTERNAL_SELECT//EXTERNAL button select
-      if (digitalRead(MODE_PIN) == 0) 
-        {mode = STATUS_WIFI;}
-          else 
-            {mode = STATUS_LAN;}
-      #ifdef ADV_DEBUG
-        printf("**** readedMODE: %s, readedAUTOMODE: %s\n", convertModes(readMode), convertAutoModes(readAutoMode));
-        printf("**** MODE: %s, AUTOMODE: %s\n", convertModes(mode), convertAutoModes(autoMode));
-      #endif       
-  #endif
-
-}
-
-#ifdef FLASH_SELECT
-  void onPressed() {
-    if (mode != 2) {
-      if (ledmod == 112)
-        ledmod = !mode;
-      else ledmod = !ledmod;
-        EEPROM.write(0, ledmod);
-      if(EEPROM.commit()) {
-        setStatusLed(ledmod);
-          #ifdef ADV_DEBUG
-            printf("**** nextMODE: %s\n", convertModes(ledmod));
-          #endif
-      }
-      else {
-          #ifdef ADV_DEBUG
-            printf("xxxx error_FS nextMODE: %s\n", convertModes(ledmod));
-          #endif
-      }
-    }
-    else {
-      autoMode++;
-      if (autoMode > 5) autoMode = 0;
-      EEPROM.write(1, autoMode);
-      if(EEPROM.commit()) {
-        #ifdef ADV_DEBUG
-            printf("**** nextAUTOMODE: %s\n", convertAutoModes(autoMode));
-        #endif
-      }
-      else {
-        #ifdef ADV_DEBUG
-            printf("xxxx error_FS nextAUTOMODE: %s\n", convertAutoModes(autoMode));
-        #endif
-      }
-    }
-  }
-
-  void onPressedForDuration3s() {
-    printf("This should not!!!");
-        uint8_t temp;
-        ledautomod = !ledautomod;
-        if (ledautomod) { temp = 2; }
-        else { temp = 0; }
-        EEPROM.write(0, temp);
-        if(EEPROM.commit()) {
-          if (temp == 2) setPin(1);
-          if (temp == 0) setPin(0);
-          #ifdef ADV_DEBUG
-            printf("**** _press_ nextMode: %s\n", convertModes(temp));
-          #endif
-        } 
-        else {
-          #ifdef ADV_DEBUG
-            printf("xxxx _press_ error_FS nextMode: %s\n", convertModes(temp));
-          #endif
-        }
-    }
-#endif
-
 void setup() {
   Serial.begin(115200);
   delay(10);
+  LittleFS.begin();
   strip.Begin();
   test();
+  initModes();
+  ConnectWifi(ssid1);
   Serial.println();
   printf("Version: %s\n", VERSION);
-    #ifdef LAN_MODE
-      UIPEthernet.init(CS_PIN); // Configures ESP8266 to use custom userdefined CS pin
-    #endif
-  #ifdef FLASH_SELECT
-    EEPROM.begin(530);
-    m_button.begin();
-    m_button.onPressed(onPressed);
-    //m_button.onPressedFor(5000, onPressed);
-    m_button.onPressedFor(3000, onPressedForDuration3s);
-    //Wire.begin(D2, D3); //D2 is using for CS pin Enc28j60
-    //lcd.begin();
-    //lcd.backlight();
-    pinMode(AUTO_LED, OUTPUT);
-  #endif
   pinMode(STATUS_LED, OUTPUT);
-  pinMode(MODE_PIN, INPUT);
-  //checkStatus(); //Set mode by changing value of variable <mode>
-    #ifdef LAN_MODE
-      if (mode == STATUS_LAN) 
-        {ConnectEthernet();}
-          else 
-            {ConnectWifi(ssid1);}
-    #else
-      ConnectWifi(ssid1);
-    #endif
-  setStatusLed(mode);
   OTA_Func();
-  //wifi_ticker.attach_ms(5000, tickFunc);
-}
-
-void tickFunc() {
-  //printf("WiFi status: %d\n", WiFi.status());
-  if(WiFi.status() != 3) {
-    if(sel_ssid2) {
-      ConnectWifi(ssid1);
-    }
-    else {
-      ConnectWifi(ssid2);
-    }
-    sel_ssid2 = !sel_ssid2;
-  }
 }
 
 void loop() { 
   //Serial.println(WiFi.getPhyMode());
-
-  #ifdef FLASH_SELECT
-    m_button.read();
-  #endif
-      ArduinoOTA.handle();
+  ArduinoOTA.handle();
   #ifndef NO_ARTNET
     processData();
   #endif
-
 }
 
 // connect to wifi
@@ -266,21 +126,6 @@ boolean ConnectWifi(const char *ssid) {
   return state;
 }
 
-#ifdef LAN_MODE
-//connect Ethernet
-void ConnectEthernet() {
-  #ifdef ADV_DEBUG
-    printf("Connecting to LAN\n");
-  #endif
-  Ethernet.begin(mac,ip, dns, gateway, subnet_ip);
-  int res = ethernetUdp.begin(ARTNET_PORT); // Open ArtNet port LAN) 
-      #ifdef ADV_DEBUG
-        if (res == 1) printf("**** Opened UDP socket (LAN) on port :%d\n", ARTNET_PORT);
-        if (res == 0) printf("xxxx error opening UDP (LAN)(no available sockets)\n");
-      #endif
-}
-#endif
-
 //#ifdef DROP_PACKETS
 //Return duration between current time and time in variable "newTime"
 int getTimeDuration() { 
@@ -338,58 +183,9 @@ void readWiFiUDP() {
               printf("%d %d ms_wifi ** wsTime: %d\n", mycounter, dur, micros() - oldd);
             #endif
          #endif
-
-  #ifdef FLASH_SELECT
-        //Recording to FS
-        if (uniData[511] == 201) recordPacketsCounter++;
-          else recordPacketsCounter = 0;
-        if (recordPacketsCounter > 25) {
-          writeDataPacketToFS();
-          setRecordedMode();
-          recordPacketsCounter = 0;
-        }
-
-        //Receiving packet from remote for recording
-        if (uniData[510] == 175) {
-          noSignalTime = 0; // awoid blackout
-          blackoutSetted = true; //avoid blackout
-          autoMode = 5; //switch to RECORDED mode for showing received packet
-        }
-  #endif
       }    
     }
 }
-
-#ifdef LAN_MODE
-//Reading Ethernet UDP Data (IRAM_ATTR) (ICACHE_FLASH_ATTR)
-void readEthernetUDP() {
-    if (ethernetUdp.parsePacket() /*&& ethernetUdp.destinationIP() == ip*/) {
-      noSignalTime = millis();
-        ethernetUdp.read(hData, 18);
-     if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
-         uniSize = (hData[16] << 8) + (hData[17]);
-         ethernetUdp.read(uniData, uniSize);
-         universe = hData[14];
-         int dur = getTimeDuration();
-
-#ifdef DEBUGMODE
-        if(sizeof(uniData) == 514) { //*******************************************
-           if(uniData[509] == 255) {
-             mycounter = 0;
-           }
-         }
-         Serial.printf("%d  %d ms_lan\n", mycounter, dur);//***********************************
-         mycounter++;//********************************************************************
-#endif
-          #ifdef DROP_PACKETS
-         if (dur > MIN_TIME) sendWS();
-          #else 
-          sendWS();
-         #endif
-        }    
-    }
-}
-#endif
 
 //Choosing which readUPD function to use
 void processData() {
@@ -413,32 +209,23 @@ void processData() {
       autoModeFunc();
       readWiFiUDP();
       break;
+    case 3:
+      break;
   }
 }
 
 void autoModeFunc() {
-  if (autoMode == 0) {
-    chaserColor();
-    }
-    else {
       switch (autoMode) {
-        case 1:
-          setStaticColor(white);
+        case 0:
+          setStaticColor(readedRGB);
           break;
-        case 2:
-          setStaticColor(red);
+        case 1:
+          chasePlayer();
           break;
         case 3:
-          setStaticColor(green);
+          effectPlayer();
           break;
-        case 4:
-          setStaticColor(blue);
-          break;
-        case 5:
-          sendWS();
-          break;
-        }
-    }
+      }
 }
 
 void sendWS() {
@@ -449,26 +236,3 @@ void sendWS() {
     } 
     strip.Show(); 
 }
-#ifdef FLASH_SELECT
-void readDataPacketFromFS() {
-  for(int i = 0; i < 511; i++) {
-    uniData[i] = EEPROM.read(i+11);
-  }
-}
-
-void writeDataPacketToFS() {
-  for(int i = 0; i < 511; i++) {
-    EEPROM.write(i+11, uniData[i]);
-  }
-  EEPROM.commit();
-}
-
-void setRecordedMode() {
-  EEPROM.write(0, 2);
-  EEPROM.write(1, 5);
-  if (EEPROM.commit()) setPin(1);
-}
-#endif
-
-
-
