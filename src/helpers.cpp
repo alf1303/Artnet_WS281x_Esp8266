@@ -1,18 +1,16 @@
 #include "helpers.h"
-// uint8_t mode = 0; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
-// uint8_t autoMode = 0; // mode for Automatic strip control
-// uint8_t speed = 0; //speed for playing effects from FS
-// uint8_t chaseNum = 0;
-// uint8_t recordedEffNum = 0;
+
+WiFiUDP wifiUdp;
 settings_t settings = {
   mode : 0, // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
   autoMode : 0, // mode for Automatic strip control
   speed : 0, //speed for playing effects from FS
   readedRGB : blue, //color for static automode
   chaseNum : 0, //number of internal chase
-  recordedEffNum : 0 //number of recorded effect
+  //recordedEffNum : 0 //number of recorded effect
 };
-
+settings_t temp_set;
+request_t request;
 
 //NEOPIXEL Variables
 RgbColor red(colorSaturation, 0, 0);
@@ -58,15 +56,49 @@ void initModes() {
     printf("File length: %d\n", f.size());
     uint8_t temp[7];
     f.read(temp, 7);
-    settings.mode = temp[0];
-    settings.autoMode = temp[1];
-    if(settings.autoMode == 1) settings.chaseNum = temp[2];
-    if(settings.autoMode == 2) settings.recordedEffNum = temp[2];
-    settings.speed = temp[3];
-    settings.readedRGB = RgbColor(temp[4], temp[5], temp[6]);
     f.close();
+    fillSettingsFromFs(&settings);
     printf("Writed!\n");
   }
+}
+
+void formAnswer() {
+  printf("Command: %c, Option: %c, Mode: %d, Automode: %d\n", request.command, request.option, request.mode, request.autoMode);
+  Serial.println(request.sourceIP.toString());
+  fillSettingsFromFs(&temp_set);
+  wifiUdp.beginPacket(request.sourceIP, ARTNET_PORT);
+  wifiUdp.write("CP");
+  wifiUdp.write(UNI);
+  wifiUdp.write(VERSION);
+  wifiUdp.write(temp_set.mode);
+  wifiUdp.write(settings.mode);
+  wifiUdp.write(temp_set.autoMode);
+  wifiUdp.write(settings.autoMode);
+  wifiUdp.write(temp_set.chaseNum);
+  wifiUdp.write(settings.chaseNum);
+  wifiUdp.write(temp_set.speed);
+  wifiUdp.write(settings.speed);
+  wifiUdp.write(temp_set.readedRGB.R);
+  wifiUdp.write(temp_set.readedRGB.G);
+  wifiUdp.write(temp_set.readedRGB.B);
+  wifiUdp.write(settings.readedRGB.R);
+  wifiUdp.write(settings.readedRGB.G);
+  wifiUdp.write(settings.readedRGB.B);
+  wifiUdp.endPacket();
+}
+
+void fillSettingsFromFs(settings_t* temp_set) {
+  File f = LittleFS.open(FILE_MODES, "r");
+  uint8_t temp[7];
+  f.read(temp, 7);
+  *temp_set = {
+    mode : temp[0],
+    autoMode : temp[1],
+    speed: temp[3],
+    readedRGB : RgbColor(temp[4], temp[5], temp[6]),
+    chaseNum : temp[2],
+  };
+  f.close();
 }
 
 void chasePlayer() {

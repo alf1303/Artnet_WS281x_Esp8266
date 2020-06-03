@@ -9,7 +9,6 @@
 
 //WRiting to ws - ~418mcrsec
 */
-#define VERSION "v_0.5.2"
 //#define NO_WS
 //#define NO_ARTNET
 #define ADV_DEBUG
@@ -19,7 +18,6 @@
 #include "helpers.h"
 
 //Ethernet Settings
-#define UNI 33 //************************************
 //const char* ssid; //SSID 
 const char* ssid1 = (char*)"udp";
 //Ticker wifi_ticker;
@@ -29,7 +27,6 @@ long noSignalTime = 0; // holds time for calculating cctime interval after last 
 bool blackoutSetted = false; // used for avoiding blackout if no signal, when in RECORDED mode
 int recordPacketsCounter = 0; // counting packets for allow saving received packet into FS (for avoiding signal noise issues)
 int mycounter = -1; //counter of packets, need only for debugging and testing for printing in readWiFIUdp and readEthernetUdp methods
- WiFiUDP wifiUdp;
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -145,6 +142,8 @@ void readWiFiUDP() {
         wifiUdp.read(hData, 18);
         //printf("Uni: %d\n", hData[14]);
      if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
+       Serial.print("Source IP: ");
+       Serial.println(wifiUdp.remoteIP().toString());
          uniSize = (hData[16] << 8) + (hData[17]);
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
@@ -184,6 +183,25 @@ void readWiFiUDP() {
             #endif
          #endif
       }    
+
+      else if (hData[0] == 'C' && hData[1] == 'P' && hData[2] == UNI) {
+      // Serial.println(hData[0]);
+      // Serial.println(hData[1]);
+      // Serial.println(hData[2]);
+      // Serial.println(hData[3]);
+      // Serial.println(hData[4]);
+        request.command = hData[3];
+        request.option = hData[4];
+        request.sourceIP = wifiUdp.remoteIP();
+        if(hData[3] == 'S') {
+          request.mode = hData[5];
+          request.autoMode = hData[6];
+          request.numEff = hData[7];
+          request.speed = hData[8];
+          request.color = RgbColor(hData[9], hData[10], hData[11]);
+        }
+        formAnswer();
+      }
     }
 }
 

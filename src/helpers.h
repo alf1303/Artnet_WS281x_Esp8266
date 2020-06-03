@@ -3,6 +3,8 @@
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
+#define VERSION "v_0.5.2"
+#define UNI 33 //************************************
 #ifdef DROP_PACKETS 
 #define MIN_TIME 15 // Minimum time duration between 2 packets for allowing show packets (in milliseconds) 
 #endif
@@ -18,15 +20,29 @@
 #define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
 #define FILE_MODES "/modes"
 //typedef RgbColor RgbColor;
+extern WiFiUDP wifiUdp;
 typedef struct {
     uint8_t mode; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
     uint8_t autoMode; // mode for Automatic strip control
     uint8_t speed; //speed for playing effects from FS
     RgbColor readedRGB; //color for static automode
     uint8_t chaseNum; //number of internal chase
-    uint8_t recordedEffNum; //number of recorded effect
+    //uint8_t recordedEffNum; //number of recorded effect
 } settings_t;
 extern settings_t settings;
+extern settings_t temp_set;
+
+typedef struct {
+    char command;
+    char option;
+    uint8_t mode;
+    uint8_t autoMode;
+    uint8_t numEff;
+    uint8_t speed;
+    RgbColor color;
+    IPAddress sourceIP;
+} request_t;
+extern request_t request;
 
 // ARTNET CODES
 #define ARTNET_DATA 0x50
@@ -66,3 +82,5 @@ void OTA_Func();
 void chasePlayer(); //for playing internal effects
 void effectPlayer(); //for playing effects from FS
 void initModes();
+void formAnswer();
+void fillSettingsFromFs(settings_t* set);
