@@ -18,6 +18,7 @@ RgbColor green(0, colorSaturation, 0);
 RgbColor blue(0, 0, colorSaturation);
 RgbColor white(colorSaturation);
 RgbColor black(0);
+RgbColor highlite(150, 150, 150);
 HslColor chaseColor;  // for CHASE submode of AUTO mode
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
@@ -62,9 +63,64 @@ void initModes() {
   }
 }
 
-void formAnswer() {
+void processRequest() {
   printf("Command: %c, Option: %c, Mode: %d, Automode: %d\n", request.command, request.option, request.mode, request.autoMode);
   Serial.println(request.sourceIP.toString());
+  switch (request.command)
+  {
+  case 'G': //Remote command for getting some info
+    processGetCommand();
+    break;
+  case 'S': //Remote command for setting some settings
+    processSetCommand();
+    break;
+  
+  default:
+    printf("**** Remote command unknown\n");
+    break;
+  }
+}
+
+void processGetCommand() {
+  switch (request.option)
+  {
+  case 'S': //option for getting some settings
+    formAnswerInfo();
+    break;
+  
+  default:
+    printf("**** Remote option unknown\n");
+    break;
+  }
+}
+
+void processSetCommand() {
+  switch (request.option)
+  {
+  case 'S': //option for setting some settings to esp
+    /* code */
+    break;
+  case 'H': //option for setting highlite mode
+    setHighliteMode();
+    break;
+  case 'h': //option for unsetting highlight mode
+    unsetHighliteMode();
+    break;
+  
+  default:
+    break;
+  }
+}
+
+void setHighliteMode() {
+
+}
+
+void unsetHighliteMode() {
+
+}
+
+void formAnswerInfo() {
   fillSettingsFromFs(&temp_set);
   wifiUdp.beginPacket(request.sourceIP, ARTNET_PORT_OUT);
   wifiUdp.write("CP");

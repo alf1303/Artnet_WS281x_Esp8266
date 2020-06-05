@@ -73,6 +73,7 @@ extern RgbColor green;
 extern RgbColor blue;
 extern RgbColor white;
 extern RgbColor black;
+extern RgbColor highlite;
 
 char* convertModes(int mod); //Converts digital values to String names for General mode
 char* convertAutoModes(int automod); //Converts digital values to String names for Auto modes
@@ -83,5 +84,10 @@ void OTA_Func();
 void chasePlayer(); //for playing internal effects
 void effectPlayer(); //for playing effects from FS
 void initModes();
-void formAnswer();
+void formAnswerInfo();
+void processRequest();
+void processGetCommand();
+void processSetCommand();
+void setHighliteMode();
+void unsetHighliteMode();
 void fillSettingsFromFs(settings_t* set);

@@ -193,14 +193,14 @@ void readWiFiUDP() {
         request.command = hData[3];
         request.option = hData[4];
         request.sourceIP = wifiUdp.remoteIP();
-        if(hData[3] == 'S') {
+        if(hData[3] == 'S' && hData[4] == 'S') {
           request.mode = hData[5];
           request.autoMode = hData[6];
           request.numEff = hData[7];
           request.speed = hData[8];
           request.color = RgbColor(hData[9], hData[10], hData[11]);
         }
-        formAnswer();
+        processRequest();
       }
     }
 }
