@@ -66,7 +66,7 @@ void formAnswer() {
   printf("Command: %c, Option: %c, Mode: %d, Automode: %d\n", request.command, request.option, request.mode, request.autoMode);
   Serial.println(request.sourceIP.toString());
   fillSettingsFromFs(&temp_set);
-  wifiUdp.beginPacket(request.sourceIP, ARTNET_PORT);
+  wifiUdp.beginPacket(request.sourceIP, ARTNET_PORT_OUT);
   wifiUdp.write("CP");
   wifiUdp.write(UNI);
   wifiUdp.write(VERSION);

@@ -185,11 +185,11 @@ void readWiFiUDP() {
       }    
 
       else if (hData[0] == 'C' && hData[1] == 'P' && hData[2] == UNI) {
-      // Serial.println(hData[0]);
-      // Serial.println(hData[1]);
-      // Serial.println(hData[2]);
-      // Serial.println(hData[3]);
-      // Serial.println(hData[4]);
+      //  Serial.println(hData[0]);
+      //  Serial.println(hData[1]);
+      //  Serial.println(hData[2]);
+      //  Serial.println(hData[3]);
+      //  Serial.println(hData[4]);
         request.command = hData[3];
         request.option = hData[4];
         request.sourceIP = wifiUdp.remoteIP();

@@ -49,6 +49,7 @@ extern request_t request;
 #define ARTNET_POLL 0x20
 #define ARTNET_POLL_REPLY 0x21
 #define ARTNET_PORT 6454
+#define ARTNET_PORT_OUT 6455
 #define ARTNET_HEADER 17
 
 //UDP Settings
