@@ -302,7 +302,7 @@ void test() {
         showStrip();
         chaseHue = chaseHue + 0.005f;
         if (chaseHue >= 1.0) chaseHue = 0;
-        delay(5 + speed);
+        delay(260 - speed);
     }
 
   void  setStaticColor(RgbColor color) {
