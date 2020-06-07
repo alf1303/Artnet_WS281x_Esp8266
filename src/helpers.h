@@ -3,7 +3,7 @@
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
-#define VERSION "v_0.5.2"
+#define VERSION "v_0.6.0"
 #define UNI 33 //************************************
 #ifdef DROP_PACKETS 
 #define MIN_TIME 15 // Minimum time duration between 2 packets for allowing show packets (in milliseconds) 
@@ -41,6 +41,7 @@ typedef struct {
     uint8_t speed;
     RgbColor color;
     IPAddress sourceIP;
+    bool save;
 } request_t;
 extern request_t request;
 
@@ -74,10 +75,12 @@ extern RgbColor blue;
 extern RgbColor white;
 extern RgbColor black;
 extern RgbColor highlite;
+extern RgbColor before_highlite;
+extern bool _highlite;
 
 char* convertModes(int mod); //Converts digital values to String names for General mode
 char* convertAutoModes(int automod); //Converts digital values to String names for Auto modes
-void chaserColor();
+void chaserColor(int speed);
 void setStaticColor(RgbColor);
 void test();
 void OTA_Func();
@@ -91,3 +94,7 @@ void processSetCommand();
 void setHighliteMode();
 void unsetHighliteMode();
 void fillSettingsFromFs(settings_t* set);
+void saveSettingsToFs();
+void showStrip();
+void setReset();
+void setRemoteColor();

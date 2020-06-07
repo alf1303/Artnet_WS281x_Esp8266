@@ -165,7 +165,7 @@ void readWiFiUDP() {
           #endif
            #ifndef NO_WS
             long oldd = micros();
-            sendWS();
+            if (settings.mode == STATUS_WIFI) sendWS();
             printf("wsTime: %lu\n", micros() - oldd);
            #endif
            
@@ -178,18 +178,13 @@ void readWiFiUDP() {
           #else 
             #ifndef NO_WS
               long oldd = micros();
-              sendWS();
+              if (settings.mode = STATUS_WIFI) sendWS();
               printf("%d %d ms_wifi ** wsTime: %d\n", mycounter, dur, micros() - oldd);
             #endif
          #endif
       }    
 
       else if (hData[0] == 'C' && hData[1] == 'P' && hData[2] == UNI) {
-      //  Serial.println(hData[0]);
-      //  Serial.println(hData[1]);
-      //  Serial.println(hData[2]);
-      //  Serial.println(hData[3]);
-      //  Serial.println(hData[4]);
         request.command = hData[3];
         request.option = hData[4];
         request.sourceIP = wifiUdp.remoteIP();
@@ -199,6 +194,7 @@ void readWiFiUDP() {
           request.numEff = hData[7];
           request.speed = hData[8];
           request.color = RgbColor(hData[9], hData[10], hData[11]);
+          request.save = hData[12];
         }
         processRequest();
       }
@@ -252,5 +248,6 @@ void sendWS() {
         RgbColor color(uniData[i * 3], uniData[i * 3 + 1], uniData[i * 3 + 2]);
         strip.SetPixelColor(i, color);
     } 
-    strip.Show(); 
+    //strip.Show(); 
+    showStrip();
 }

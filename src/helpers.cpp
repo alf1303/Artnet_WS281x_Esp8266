@@ -19,6 +19,8 @@ RgbColor blue(0, 0, colorSaturation);
 RgbColor white(colorSaturation);
 RgbColor black(0);
 RgbColor highlite(150, 150, 150);
+RgbColor before_highlite;
+bool _highlite = false;
 HslColor chaseColor;  // for CHASE submode of AUTO mode
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
@@ -63,8 +65,28 @@ void initModes() {
   }
 }
 
+void saveSettingsToFs() {
+  File f = LittleFS.open(FILE_MODES, "w");
+  if(!f) {
+      printf("**** Open mode_file for writing fails\n");
+  }
+  else {
+    f.write(settings.mode);
+    f.write(settings.autoMode);
+    f.write(settings.chaseNum);
+    f.write(settings.speed);
+    f.write(settings.readedRGB.R);
+    f.write(settings.readedRGB.G);
+    f.write(settings.readedRGB.B);
+    delay(50);
+    f.close();
+  }
+  formAnswerInfo();
+}
+
 void processRequest() {
   printf("Command: %c, Option: %c, Mode: %d, Automode: %d\n", request.command, request.option, request.mode, request.autoMode);
+  printf("R: %d, G: %d, B: %d, save: %d\n", request.color.R, request.color.G, request.color.B, request.save);
   Serial.println(request.sourceIP.toString());
   switch (request.command)
   {
@@ -98,7 +120,7 @@ void processSetCommand() {
   switch (request.option)
   {
   case 'S': //option for setting some settings to esp
-    /* code */
+    setRemoteColor();
     break;
   case 'H': //option for setting highlite mode
     setHighliteMode();
@@ -106,18 +128,43 @@ void processSetCommand() {
   case 'h': //option for unsetting highlight mode
     unsetHighliteMode();
     break;
-  
+  case 'R':
+    setReset();
+    break;
+  case 'C':
+  /*****/
+    break;
   default:
+    printf("**** Unknown set option\n");
     break;
   }
 }
 
 void setHighliteMode() {
-
+  before_highlite = strip.GetPixelColor(1);
+  setStaticColor(highlite);
+  _highlite = true;
 }
 
 void unsetHighliteMode() {
+  _highlite = false;
+  setStaticColor(black);
+}
 
+void setReset() {
+  ESP.restart();
+}
+
+void setRemoteColor() {
+  printf("Setting remote settings\n");
+  settings.mode = request.mode;
+  settings.autoMode = request.autoMode;
+  settings.chaseNum = request.numEff;
+  settings.speed = request.speed;
+  settings.readedRGB = request.color;
+  if(request.save) {
+    saveSettingsToFs();
+  }
 }
 
 void formAnswerInfo() {
@@ -158,7 +205,15 @@ void fillSettingsFromFs(settings_t* temp_set) {
 }
 
 void chasePlayer() {
-
+  switch (settings.chaseNum)
+  {
+  case 0:
+    chaserColor(settings.speed);
+    break;
+  
+  default:
+    break;
+  }
 }
 
 void effectPlayer() {
@@ -204,6 +259,12 @@ char* convertAutoModes(int automod)  {
     }
 }
 
+void showStrip() {
+  if (!_highlite) {
+    strip.Show();
+  }
+}
+
 void test() {
   RgbColor redd = RgbColor(30, 0, 0);
   RgbColor grenn = RgbColor(0, 30, 0);
@@ -211,38 +272,44 @@ void test() {
   for(int i = 0; i < PixelCount; i++) {
     strip.SetPixelColor(i, redd);
   }
-  strip.Show();
+  //strip.Show();
+  showStrip();
   delay(500);
   for(int i = 0; i < PixelCount; i++) {
     strip.SetPixelColor(i, grenn);
   }
-  strip.Show();
+  //strip.Show();
+  showStrip();
   delay(500);
   for(int i = 0; i < PixelCount; i++) {
     strip.SetPixelColor(i, bluee);
   }
-  strip.Show();
+  //strip.Show();
+  showStrip();
   delay(100);
     for(int i = 0; i < PixelCount; i++) {
     strip.SetPixelColor(i, black);
   }
-  strip.Show();
+  //strip.Show();
+  showStrip();
   delay(500);
 }
 
-    void chaserColor() {
+    void chaserColor(int speed) {
         chaseColor = HslColor (chaseHue, 1.0f, 0.4f);
         for (int i = 0; i < PixelCount; i++) strip.SetPixelColor(i, chaseColor);
-        strip.Show();
+        //strip.Show();
+        showStrip();
         chaseHue = chaseHue + 0.005f;
         if (chaseHue >= 1.0) chaseHue = 0;
-        delay(100);
+        delay(5 + speed);
     }
 
-  void setStaticColor(RgbColor color) {
+  void  setStaticColor(RgbColor color) {
     for (int i = 0; i < PixelCount; i++) {
       strip.SetPixelColor(i, color);
-      strip.Show();
+      //strip.Show();
+      showStrip();
     }
   }
 
