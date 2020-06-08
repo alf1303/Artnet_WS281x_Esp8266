@@ -3,6 +3,7 @@
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
+#include "recorder.h"
 #define VERSION "v_0.6.0"
 #define UNI 33 //************************************
 #ifdef DROP_PACKETS 
