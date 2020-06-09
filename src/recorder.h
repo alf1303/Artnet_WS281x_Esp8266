@@ -1,15 +1,20 @@
+#pragma once
 #include <LittleFS.h>
 
 class Recorder {
     bool fileNameSetted;
     bool fileOpened;
     bool _writing;
+    bool _reading;
     bool _first;
     bool _stopped;
     char filename[5];
+    int packetCount;
     File file;
     uint8_t* firstPacket; 
     uint8_t bytesToSave;
+
+    public:
     Recorder(uint8_t pixel_num) {
         init();
         bytesToSave = pixel_num*3;
@@ -20,7 +25,9 @@ class Recorder {
         fileNameSetted = false;
         fileOpened = false;
         _writing = false;
+        _reading = false;
         _first = true;
+        packetCount = 0;
     }
 
     void setFile(int num) {
@@ -31,12 +38,15 @@ class Recorder {
 
     void openReadFile() {
         if (fileNameSetted) {
-            file = LittleFS.open(filename, "r");
-            fileOpened = true;
-            printf("*rec* opened file for reading: %s\n", filename);
+            if (LittleFS.exists(filename)) {
+                file = LittleFS.open(filename, "r");
+                fileOpened = true;
+                firstPacket = (uint8_t*)calloc(bytesToSave, sizeof(uint8_t));
+                printf("*rec* opened file for reading: %s\n", filename);
+            }
         }
         else {
-            printf("*rec* fail to open file for reading: %s\n", filename);
+            printf("*rec* fileName not setted: %s\n", filename);
         }
     }
 
@@ -75,7 +85,7 @@ class Recorder {
     }
 
     void stopWriting(uint8_t cause) {
-        printf("*rec* stop writing: %d (1 match, 2 stop, 3 clear)\n", cause);
+        printf("*rec* stop writing: %d (1 match, 2 stop, 3 clear) | count: %d\n", cause, packetCount);
         _stopped = true;
         closeFile();
         free(firstPacket);
@@ -106,10 +116,41 @@ class Recorder {
                 }
                 else {
                    file.write(data, bytesToSave);
+                   packetCount++;
                   _first = false;
                 }
             }
         }
+    }
+
+    uint8_t* readPacket(uint8_t f_index, uint8_t speed) {
+        if(!_reading) {
+            setFile(f_index);
+            openReadFile();
+            _reading = true;
+            printf("*rec* start reading\n");
+        }
+        if(file.available()) {
+            file.read(firstPacket, bytesToSave);
+            delay(35 - speed/12);
+        }
+        else {
+            file.seek(0, SeekSet);
+        }
+        return firstPacket;
+    }
+
+    void tryStopReading() {
+        if (_reading) {
+            stopReading();
+        }
+    }
+
+    void stopReading() {
+        closeFile();
+        free(firstPacket);
+        _reading = false;
+        printf("*rec* reading stopped\n");
     }
 
 };

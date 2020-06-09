@@ -12,6 +12,8 @@ settings_t settings = {
 settings_t temp_set;
 request_t request;
 
+ Recorder recorder = Recorder(PixelCount);
+
 //NEOPIXEL Variables
 RgbColor red(colorSaturation, 0, 0);
 RgbColor green(0, colorSaturation, 0);
@@ -205,15 +207,34 @@ void fillSettingsFromFs(settings_t* temp_set) {
 }
 
 void chasePlayer() {
-  switch (settings.chaseNum)
-  {
-  case 0:
+  if (settings.chaseNum == 11) {
     chaserColor(settings.speed);
-    break;
-  
-  default:
-    break;
   }
+  else if(settings.chaseNum >=0 && settings.chaseNum <= 3) {
+    sendWSread(recorder.readPacket(settings.chaseNum, settings.speed));
+  }
+  else {
+    printf("**** error chasenum\n");
+  }
+  
+  // switch (settings.chaseNum)
+  // {
+  // case 0:
+  //   sendWSread(recorder.readPacket(settings.chaseNum, settings.speed));
+  //   break;
+  // case 1:
+  //   sendWSread(recorder.readPacket(settings.chaseNum, settings.speed));
+  //   break;
+  // case 2:
+  //  sendWSread(recorder.readPacket(settings.chaseNum, settings.speed));
+  //  break;       
+  // case 11:
+  //   chaserColor(settings.speed);
+  //   break;
+  // default:
+  //   printf("**** error chasenum\n");
+  //   break;
+  // }
 }
 
 void effectPlayer() {

@@ -13,7 +13,7 @@
 //#define NO_ARTNET
 #define ADV_DEBUG
 #define DEBUGMODE
-#define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
+//#define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #include "helpers.h"
 
@@ -142,8 +142,8 @@ void readWiFiUDP() {
         wifiUdp.read(hData, 18);
         //printf("Uni: %d\n", hData[14]);
      if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
-       Serial.print("Source IP: ");
-       Serial.println(wifiUdp.remoteIP().toString());
+       //Serial.print("Source IP: ");
+       //Serial.println(wifiUdp.remoteIP().toString());
          uniSize = (hData[16] << 8) + (hData[17]);
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
@@ -178,8 +178,9 @@ void readWiFiUDP() {
           #else 
             #ifndef NO_WS
               long oldd = micros();
-              if (settings.mode = STATUS_WIFI) sendWS();
-              printf("%d %d ms_wifi ** wsTime: %d\n", mycounter, dur, micros() - oldd);
+              recorder.writePacket(uniData, uniData[509], uniData[510], uniData[511]);
+              if (settings.mode == STATUS_WIFI) sendWS();
+              //printf("%d %d ms_wifi ** wsTime: %lu\n", mycounter, dur, micros() - oldd);
             #endif
          #endif
       }    
@@ -246,6 +247,16 @@ void sendWS() {
     for (int i = 0; i < PixelCount; i++)
     {
         RgbColor color(uniData[i * 3], uniData[i * 3 + 1], uniData[i * 3 + 2]);
+        strip.SetPixelColor(i, color);
+    } 
+    //strip.Show(); 
+    showStrip();
+}
+
+void sendWSread(uint8_t* dataa) {
+    for (int i = 0; i < PixelCount; i++)
+    {
+        RgbColor color(*dataa++, *dataa++, *dataa++);
         strip.SetPixelColor(i, color);
     } 
     //strip.Show(); 

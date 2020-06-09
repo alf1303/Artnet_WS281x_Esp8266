@@ -4,7 +4,7 @@
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
 #include "recorder.h"
-#define VERSION "v_0.6.0"
+#define VERSION "v_0.6.1"
 #define UNI 33 //************************************
 #ifdef DROP_PACKETS 
 #define MIN_TIME 15 // Minimum time duration between 2 packets for allowing show packets (in milliseconds) 
@@ -32,6 +32,8 @@ typedef struct {
 } settings_t;
 extern settings_t settings;
 extern settings_t temp_set;
+
+extern Recorder recorder;
 
 typedef struct {
     char command;
@@ -99,3 +101,4 @@ void saveSettingsToFs();
 void showStrip();
 void setReset();
 void setRemoteColor();
+void sendWSread(uint8_t* data);

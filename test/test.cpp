@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 bool comparePackets(uint8_t* first, uint8_t* second, size_t size);
+void tryToStop(uint8_t *stopVal);
 
 int main() {
     uint8_t first[514];
@@ -10,7 +11,10 @@ int main() {
         second[i] = (i)%255;
         if(i == 500) second[i] = 15;
     }
-    printf("result: %d\n", comparePackets(first, second, 514));
+    uint8_t val = 15;
+    tryToStop(&val);
+    printf("changed stopVal: %d\n", val);
+    //printf("result: %d\n", comparePackets(first, second, 514));
 }
 
 bool comparePackets(uint8_t* first, uint8_t* second, size_t size) {
@@ -24,4 +28,9 @@ bool comparePackets(uint8_t* first, uint8_t* second, size_t size) {
         size--;
     }
     return true;
+}
+
+void tryToStop(uint8_t* stopVal) {
+    printf("stopVal: %d\n", *stopVal);
+    *stopVal = 26;
 }
