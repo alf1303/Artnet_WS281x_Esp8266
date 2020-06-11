@@ -4,7 +4,7 @@
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
 #include "recorder.h"
-#define VERSION "v_0.6.1"
+#define VERSION "v_0.6.3"
 #define UNI 33 //************************************
 //#define NO_WS
 //#define NO_ARTNET

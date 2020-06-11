@@ -164,7 +164,8 @@ class Recorder {
         if(file.available()) {
             packetCount++;
             file.read(firstPacket, bytesToSave);
-            delay(35 - speed/12);
+            //delay(35 - speed/12);
+            delay(50 - speed/6);
         }
         else {
             file.seek(0, SeekSet);
