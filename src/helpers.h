@@ -6,6 +6,12 @@
 #include "recorder.h"
 #define VERSION "v_0.6.1"
 #define UNI 33 //************************************
+//#define NO_WS
+//#define NO_ARTNET
+#define ADV_DEBUG
+#define DEBUGMODE
+#define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
+#define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #ifdef DROP_PACKETS 
 #define MIN_TIME 15 // Minimum time duration between 2 packets for allowing show packets (in milliseconds) 
 #endif
@@ -34,6 +40,7 @@ extern settings_t settings;
 extern settings_t temp_set;
 
 extern Recorder recorder;
+extern uint8_t writingFlag;
 
 typedef struct {
     char command;

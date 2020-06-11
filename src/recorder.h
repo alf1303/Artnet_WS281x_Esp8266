@@ -12,13 +12,15 @@ class Recorder {
     bool _stopped;
     char filename[5];
     int packetCount;
+    uint8_t* wr_ext_flag;
     File file;
     uint8_t* firstPacket; 
     int bytesToSave;
 
     public:
-    Recorder(uint8_t pixel_num) {
+    Recorder(uint8_t pixel_num, uint8_t *wr_flag) {
         init();
+        wr_ext_flag = wr_flag;
         bytesToSave = pixel_num*3;
         _stopped = false;
     };
@@ -50,6 +52,7 @@ class Recorder {
             }
         }
         else {
+            firstPacket = (uint8_t*)calloc(bytesToSave, sizeof(uint8_t));
             printf("*rec* fileName not setted: %s\n", filename);
         }
     }
@@ -58,6 +61,7 @@ class Recorder {
         if (fileNameSetted) {
             packetCount = 0;
             file = LittleFS.open(filename, "w");
+            *wr_ext_flag = 1;
             fileOpened = true;
             firstPacket = (uint8_t*)calloc(bytesToSave, sizeof(uint8_t));
             printf("*rec* opened file for writing: %s\n", filename);
@@ -94,6 +98,7 @@ class Recorder {
         printf("*rec* stop writing: %d (1 match, 2 stop, 3 clear) | count: %d\n", cause, packetCount);
         //printf("*rec* bytesToSave: %d\n", bytesToSave);
         _stopped = true;
+        *wr_ext_flag = 0;
         closeFile();
         free(firstPacket);
         init();
@@ -106,14 +111,14 @@ class Recorder {
                 stopWriting(3);
             }
         }
-        if (start == 255 && !_stopped) {
+        if (start >= 250 && !_stopped) {
             first++;
-            if (first == 30) {
+            if (first == 20) {
                 //printf("*rec* store firstPacket\n");
                 memcpy(firstPacket, data, bytesToSave);
             }
 
-            if (first == 32) {
+            if (first == 80) {
                 //printf("*rec* allow to compare \n");
                 _first = false;
             }
@@ -128,7 +133,13 @@ class Recorder {
                 stopWriting(2);
             }
             else {
-                bool match = comparePackets(firstPacket, data, bytesToSave);
+                bool match;
+                if (start != 250) {
+                   match = comparePackets(firstPacket, data, bytesToSave);
+                }
+                else {
+                    match = false;
+                }
                 if(!_first && match) {
                     stopWriting(1);
                 }

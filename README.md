@@ -1,11 +1,5 @@
 # Artnet_WS281x_Esp8266
- Controls WS2812/13 via Artnet using esp8266 and ENC28j60 for LAN
-
-#define FLASH_SELECT
-Use this if changing runmode from WIFI to LAN should be with inbuilt FLASH button. While loading ESP reads byte from address '0' in EEPROM (1 - LAN mode, 0, 2-255 - WIFI mode) and set up ESP to according mode. Pressing FLASH button changes Led indicator (on - LAN, off - WIFI) and writes to EEPROM new value, which will be used during next load.
-
-#define EXTERNAL_SELECT
-Use this if changing runmode should be with external button, connected to D1 (GPIO 5). LOW is WIFI, HIGH is LAN. Setting mode performs while loading ESP. Led indicator shows current mode (ON - WIFI, OFF - LAN)
+ Controls WS2812/13 via Artnet using esp8266
 
 #define DROP_PACKETS
 Using this allow dropping packets, if interval after previous packets is less then MIN_TIME (30ms for now)
@@ -17,24 +11,16 @@ WIFI PASSWORD: esp18650
 Router IP Address: 2.0.0.101
 Nodes IP Address range: 2.0.0.21 - 2.0.0.63
 Nodes works in unicast mode ONLY
-For MagicQ use CONTINUOUS mode
+For MagicQ use CONTINUOUS mode (33fps) or Reduced (60fps) or Mixed+Changes
 Nodes Artnet universes range: 21-63 (node's working universe is equal to last IP address byte)
 
 WORKING MODES:
 WIFI
--Led near RESET button is OFF
-LAN
--Led near RESET button is ON
+#LAN
 AUTOMODE
--Led near ESP chip is ON, when OFF, AUTOMODE is disabled
 
-Changing Modes:
-- Pressing button FLASH shortly changes mode between WIFI and LAN  (Led near RESET button indicates)
-  Switching power OFF/ON needed for starting new selected mode
-
-- Pressing button FLASH for more than 5 seconds switch to AUTOMODE (Led near ESP chip indicates)
-  Then by shortly presses FLASH button you can scroll between automodes (CHASE, WHITE, RED, GREEN, BLUE)
-
-- Press FLASH button for more then 5 seconds for switching to Artnet mode (WIFI or LAN)
-
-- RECORDED mode. Saves reveived packet to FS and play it after reset(ON/OFF). For entering this mode you need to send ARTNET packet with needed data (510 = 170leds*3colors) 510 bytes, and byte number 511 have to hold value 175. For saving, ESP needs to receive at least 25 packets with data and byte number 512 setted to 201.
+AUTOMODE has a STATIC submode for showing static color which is writed in FS and CHASE submode. In CHASE submode, esp8266 plays packets from FS, which were stored there via RECORDING process.
+  RECORDING process.
+  channel 510 - number of stored effect (should be 0-9)
+  channel 511 - stop recording (255 - stop)
+  channel 512 - start recording (250 - start recording without autodetection of effect loop, 251 - 255 start recording with autodetection) Autodetection of loop means that when esp8266 detects, that while recording it receives packet, similar as was in 20th frame from the begining, it automatically stops recording

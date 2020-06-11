@@ -2,19 +2,13 @@
 //beacon interval an DTIM
 
 --- Receiving ArtNet over WiFi using Esp8266
---- Receiving ArtNet over Ethernet using Enc28j60, connected to Esp8266
 --- Output Artnet data to ws2812/13 using NeoPixelBus library
 --- Catch one universe
 --- uses GPIO3 (RX on Esp8266) GPIO2 for other boards
 
 //WRiting to ws - ~418mcrsec
 */
-//#define NO_WS
-//#define NO_ARTNET
-#define ADV_DEBUG
-#define DEBUGMODE
-//#define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
-#define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
+
 #include "helpers.h"
 #include <Ticker.h>
 
@@ -28,6 +22,7 @@ long noSignalTime = 0; // holds time for calculating cctime interval after last 
 bool blackoutSetted = false; // used for avoiding blackout if no signal, when in RECORDED mode
 int recordPacketsCounter = 0; // counting packets for allow saving received packet into FS (for avoiding signal noise issues)
 int mycounter = -1; //counter of packets, need only for debugging and testing for printing in readWiFIUdp and readEthernetUdp methods
+uint8_t writingFlag = 0; //indicates if esp is writing data to fs (when writing - 1 - DROP PACKETS is disabled, when - 0 - DROP PACKET enabled)
 
 //Wifi Settings
 const uint8_t startUniverse = UNI; //****************************
@@ -170,19 +165,25 @@ void readWiFiUDP() {
          #ifdef DROP_PACKETS
          if (dur > MIN_TIME) {
           #ifdef DEBUGMODE
-            printf("%d  %d ms_wifi ** ", mycounter, dur);//************************************
+            //printf("%d  %d ms_wifi ** ", mycounter, dur);//************************************
           #endif
            #ifndef NO_WS
             long oldd = micros();
+            recorder.writePacket(uniData, uniData[509], uniData[510], uniData[511]);
             if (settings.mode == STATUS_WIFI) sendWS();
-            printf("wsTime: %lu\n", micros() - oldd);
+            //printf("wsTime: %lu\n", micros() - oldd);
            #endif
-           
          }
          else {
-          #ifdef DEBUGMODE
-            printf("%d Dropped: %dms\n", mycounter, dur);
-          #endif
+           if (writingFlag) {
+              recorder.writePacket(uniData, uniData[509], uniData[510], uniData[511]);
+              if (settings.mode == STATUS_WIFI) sendWS();
+           } else {
+              #ifdef DEBUGMODE
+                printf("%d Dropped: %dms\n", mycounter, dur);
+              #endif
+           }
+
          }
           #else 
             #ifndef NO_WS
@@ -263,9 +264,13 @@ void sendWS() {
 }
 
 void sendWSread(uint8_t* dataa) {
+  uint8_t re, gr, bl;
     for (int i = 0; i < PixelCount; i++)
     {
-        RgbColor color(*dataa++, *dataa++, *dataa++);
+      re = *dataa++;
+      gr = *dataa++;
+      bl = *dataa++;
+        RgbColor color(re, gr, bl);
         strip.SetPixelColor(i, color);
     } 
     //strip.Show(); 
