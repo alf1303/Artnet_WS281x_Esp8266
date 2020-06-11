@@ -1,5 +1,6 @@
 #pragma once
 #include <LittleFS.h>
+#include <math.h>
 
 class Recorder {
     bool fileNameSetted;
@@ -7,12 +8,13 @@ class Recorder {
     bool _writing;
     bool _reading;
     bool _first;
+    int first;
     bool _stopped;
     char filename[5];
     int packetCount;
     File file;
     uint8_t* firstPacket; 
-    uint8_t bytesToSave;
+    int bytesToSave;
 
     public:
     Recorder(uint8_t pixel_num) {
@@ -27,6 +29,7 @@ class Recorder {
         _writing = false;
         _reading = false;
         _first = true;
+        first = 0;
         packetCount = 0;
     }
 
@@ -39,6 +42,7 @@ class Recorder {
     void openReadFile() {
         if (fileNameSetted) {
             if (LittleFS.exists(filename)) {
+                packetCount = 0;
                 file = LittleFS.open(filename, "r");
                 fileOpened = true;
                 firstPacket = (uint8_t*)calloc(bytesToSave, sizeof(uint8_t));
@@ -52,6 +56,7 @@ class Recorder {
 
     void openWriteFile() {
         if (fileNameSetted) {
+            packetCount = 0;
             file = LittleFS.open(filename, "w");
             fileOpened = true;
             firstPacket = (uint8_t*)calloc(bytesToSave, sizeof(uint8_t));
@@ -76,7 +81,8 @@ class Recorder {
     
     bool comparePackets(uint8_t* first, uint8_t* current, size_t p_size) {
         while(p_size > 0) {
-            if(*first++ != *current++) {
+            if(abs(*first++ - *current++) > 2) {
+                //printf("*rec* stop compare: %d\n", pcount);
                 return false;
             }
             p_size--;
@@ -86,6 +92,7 @@ class Recorder {
 
     void stopWriting(uint8_t cause) {
         printf("*rec* stop writing: %d (1 match, 2 stop, 3 clear) | count: %d\n", cause, packetCount);
+        //printf("*rec* bytesToSave: %d\n", bytesToSave);
         _stopped = true;
         closeFile();
         free(firstPacket);
@@ -100,10 +107,21 @@ class Recorder {
             }
         }
         if (start == 255 && !_stopped) {
+            first++;
+            if (first == 30) {
+                //printf("*rec* store firstPacket\n");
+                memcpy(firstPacket, data, bytesToSave);
+            }
+
+            if (first == 32) {
+                //printf("*rec* allow to compare \n");
+                _first = false;
+            }
+
             if (!_writing) {
                 setFile(f_index);
                 openWriteFile();
-                memcpy(firstPacket, data, bytesToSave);
+                //memcpy(firstPacket, data, bytesToSave);
                 _writing = true;
             }
             if (stop == 255) {
@@ -115,9 +133,11 @@ class Recorder {
                     stopWriting(1);
                 }
                 else {
-                   file.write(data, bytesToSave);
+                    if (first >= 30) {
+                        file.write(data, bytesToSave);
+                    }
                    packetCount++;
-                  _first = false;
+                  //_first = false;
                 }
             }
         }
@@ -131,17 +151,23 @@ class Recorder {
             printf("*rec* start reading\n");
         }
         if(file.available()) {
+            packetCount++;
             file.read(firstPacket, bytesToSave);
             delay(35 - speed/12);
         }
         else {
             file.seek(0, SeekSet);
+            printf("File size read: %d\n", file.size());
+            printf("*rec* read packet count: %d\n",packetCount);
+            packetCount = 0;
         }
         return firstPacket;
     }
 
     void tryStopReading() {
+        //printf("*rec* _reading: %d\n", _reading);
         if (_reading) {
+            printf("*rec* trying to stop\n");
             stopReading();
         }
     }
@@ -150,7 +176,7 @@ class Recorder {
         closeFile();
         free(firstPacket);
         _reading = false;
-        printf("*rec* reading stopped\n");
+        //printf("*rec* reading stopped\n");
     }
 
 };

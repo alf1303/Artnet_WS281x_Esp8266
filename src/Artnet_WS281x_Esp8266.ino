@@ -16,11 +16,12 @@
 //#define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #include "helpers.h"
+#include <Ticker.h>
 
 //Ethernet Settings
 //const char* ssid; //SSID 
 const char* ssid1 = (char*)"udp";
-//Ticker wifi_ticker;
+Ticker wifi_ticker;
 
 long newTime = 0; // holds time for calculating time interval between packets (for DROP_PACLETS mode)
 long noSignalTime = 0; // holds time for calculating cctime interval after last arrived packet (for NOSIGNAL blackout mode)
@@ -46,6 +47,7 @@ void setup() {
   Serial.begin(115200);
   delay(10);
   LittleFS.begin();
+  //LittleFS.format();
   strip.Begin();
   test();
   initModes();
@@ -54,6 +56,7 @@ void setup() {
   printf("Version: %s\n", VERSION);
   pinMode(STATUS_LED, OUTPUT);
   OTA_Func();
+  //wifi_ticker.attach(12, reconnectWiFi);
 }
 
 void loop() { 
@@ -62,6 +65,12 @@ void loop() {
   #ifndef NO_ARTNET
     processData();
   #endif
+}
+
+void reconnectWiFi() {
+  if (WiFi.status() != WL_CONNECTED) {
+    ConnectWifi(ssid1);
+  }
 }
 
 // connect to wifi

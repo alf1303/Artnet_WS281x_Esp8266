@@ -159,6 +159,9 @@ void setReset() {
 
 void setRemoteColor() {
   printf("Setting remote settings\n");
+  if (settings.mode != request.mode || settings.autoMode != request.autoMode || settings.chaseNum != request.numEff) {
+    recorder.tryStopReading();
+  }
   settings.mode = request.mode;
   settings.autoMode = request.autoMode;
   settings.chaseNum = request.numEff;
@@ -323,16 +326,18 @@ void test() {
         showStrip();
         chaseHue = chaseHue + 0.005f;
         if (chaseHue >= 1.0) chaseHue = 0;
-        delay(260 - speed);
+        //delay(260 - speed);
+        delay(15);
     }
 
   void  setStaticColor(RgbColor color) {
     for (int i = 0; i < PixelCount; i++) {
       strip.SetPixelColor(i, color);
       //strip.Show();
-      showStrip();
     }
-  }
+      showStrip();
+      //delay(20);
+    }
 
   //OTA - Flashing over Air
 void OTA_Func() {
