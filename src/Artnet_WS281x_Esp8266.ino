@@ -51,6 +51,7 @@ void setup() {
   printf("Version: %s\n", VERSION);
   pinMode(STATUS_LED, OUTPUT);
   OTA_Func();
+  recorder.setFunc(sendStartRecording, sendStopRecording);
   //wifi_ticker.attach(12, reconnectWiFi);
 }
 

@@ -16,6 +16,8 @@ class Recorder {
     File file;
     uint8_t* firstPacket; 
     int bytesToSave;
+    void (*funStart)();
+    void (*funStop)();
 
     public:
     Recorder(uint8_t pixel_num, uint8_t *wr_flag) {
@@ -23,7 +25,12 @@ class Recorder {
         wr_ext_flag = wr_flag;
         bytesToSave = pixel_num*3;
         _stopped = false;
-    };
+    }
+
+    void setFunc(void (*funcSt)(), void (*funcFin)()) {
+        funStart = funcSt;
+        funStop = funcFin;
+    }
 
     void init() {
         fileNameSetted = false;
@@ -102,6 +109,7 @@ class Recorder {
         closeFile();
         free(firstPacket);
         init();
+        funStop();
     }
 
     void writePacket(uint8_t* data, uint8_t f_index, uint8_t stop, uint8_t start) {
@@ -128,6 +136,7 @@ class Recorder {
                 openWriteFile();
                 //memcpy(firstPacket, data, bytesToSave);
                 _writing = true;
+                funStart();
             }
             if (stop == 255) {
                 stopWriting(2);

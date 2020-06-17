@@ -225,6 +225,24 @@ void effectPlayer() {
 
 }
 
+void sendStartRecording() {
+  printf("sendStartRecording\n");
+  wifiUdp.beginPacket(request.sourceIP, ARTNET_PORT_OUT_REC);
+  wifiUdp.write("CP");
+  wifiUdp.write(UNI);
+  wifiUdp.write('r');
+  wifiUdp.endPacket();
+}
+
+void sendStopRecording() {
+  printf("sendStopRecording\n");
+  wifiUdp.beginPacket(request.sourceIP, ARTNET_PORT_OUT_REC);
+  wifiUdp.write("CP");
+  wifiUdp.write(UNI);
+  wifiUdp.write('f');
+  wifiUdp.endPacket();
+}
+
 char* convertModes(int mod) {
     switch (mod)
     {
