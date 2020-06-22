@@ -25,24 +25,20 @@ For MagicQ use CONTINUOUS mode (33fps) or Reduced (15fps) or Mixed+Changes
 Nodes Artnet universes range: 21-63 (node's working universe is equal to last IP address byte)
 
 WORKING MODES:
-<<<<<<< HEAD
 
-WIFI
+ - WIFI
 
-=======
-WIFIa
->>>>>>> d6449c2530fa3f16780bbcfabdf1e4df3dc0b48b
-#LAN not active  now
+ - #LAN not active  now
 
-AUTOMODE
+ - AUTOMODE
 
 AUTOMODE has a STATIC submode for showing static color which is writed in FS and CHASE submode. In CHASE submode, esp8266 plays packets from FS, which were stored there via RECORDING process.
 
-  RECORDING process.
+  RECORDING process:
 
-  channel 510 - number of stored effect (should be 0-9)
+   - channel 510 - number of stored effect (should be 0-9)
 
-  channel 511 - stop recording (255 - stop)
+   - channel 511 - stop recording (255 - stop)
 
-  channel 512 - start recording (250 - start recording without autodetection of effect loop, 251 - 255 start recording with autodetection) Autodetection of loop means that when 
+   - channel 512 - start recording (250 - start recording without autodetection of effect loop, 251 - 255 start recording with autodetection) Autodetection of loop means that when 
   esp8266 detects, that while recording it receives packet, similar as was in 20th frame from the begining, it automatically stops recording
