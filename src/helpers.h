@@ -5,7 +5,9 @@
 #include <LittleFS.h>
 #include "recorder.h"
 #define VERSION "v_0.6.3"
-#define UNI 33 //************************************
+
+#define UNI 33 // change this for setting node universe and last byte of IP Address************************************
+
 //#define NO_WS
 //#define NO_ARTNET
 #define ADV_DEBUG
