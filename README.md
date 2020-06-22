@@ -25,9 +25,13 @@ For MagicQ use CONTINUOUS mode (33fps) or Reduced (15fps) or Mixed+Changes
 Nodes Artnet universes range: 21-63 (node's working universe is equal to last IP address byte)
 
 WORKING MODES:
+<<<<<<< HEAD
 
 WIFI
 
+=======
+WIFIa
+>>>>>>> d6449c2530fa3f16780bbcfabdf1e4df3dc0b48b
 #LAN not active  now
 
 AUTOMODE
