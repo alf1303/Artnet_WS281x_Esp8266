@@ -1,5 +1,5 @@
 #include "helpers.h"
-
+//*
 WiFiUDP wifiUdp;
 settings_t settings = {
   mode : 0, // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
