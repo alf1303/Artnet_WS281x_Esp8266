@@ -52,7 +52,7 @@ void setup() {
   pinMode(STATUS_LED, OUTPUT);
   OTA_Func();
   recorder.setFunc(sendStartRecording, sendStopRecording);
-  //wifi_ticker.attach(12, reconnectWiFi);
+  //wifi_ticker.attach(6, reconnectWiFi);
 }
 
 void loop() { 
