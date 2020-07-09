@@ -28,7 +28,6 @@
 #define AUTO_RECORDED 2
 #define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
 #define FILE_MODES "/modes"
-//typedef RgbColor RgbColor;
 extern WiFiUDP wifiUdp;
 typedef struct {
     uint8_t mode; // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
@@ -36,6 +35,7 @@ typedef struct {
     uint8_t speed; //speed for playing effects from FS
     RgbColor readedRGB; //color for static automode
     uint8_t chaseNum; //number of internal chase
+    uint8_t dimmer; //intensity
     //uint8_t recordedEffNum; //number of recorded effect
 } settings_t;
 extern settings_t settings;
@@ -52,8 +52,10 @@ typedef struct {
     uint8_t numEff;
     uint8_t speed;
     RgbColor color;
+    uint8_t dimmer;
     IPAddress sourceIP;
-    bool save;
+    //bool save;
+    uint8_t mask;
 } request_t;
 extern request_t request;
 
@@ -95,6 +97,7 @@ char* convertModes(int mod); //Converts digital values to String names for Gener
 char* convertAutoModes(int automod); //Converts digital values to String names for Auto modes
 void chaserColor(int speed);
 void setStaticColor(RgbColor);
+void setStaticColorDimmed();
 void test();
 void OTA_Func();
 void chasePlayer(); //for playing internal effects

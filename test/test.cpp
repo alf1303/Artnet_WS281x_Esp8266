@@ -4,6 +4,9 @@ bool comparePackets(uint8_t* first, uint8_t* second, size_t size);
 void tryToStop(uint8_t *stopVal);
 
 int main() {
+    uint8_t vl = 127;
+    float f = vl*1.0/255;
+    printf("%f\n", f);
     uint8_t first[514];
     uint8_t second[514];
     for(int i = 0; i < 514; i++) {

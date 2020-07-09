@@ -7,6 +7,7 @@ settings_t settings = {
   speed : 0, //speed for playing effects from FS
   readedRGB : blue, //color for static automode
   chaseNum : 0, //number of internal chase
+  dimmer : 255,
   //recordedEffNum : 0 //number of recorded effect
 };
 settings_t temp_set;
@@ -51,19 +52,15 @@ void initModes() {
       f.write(settings.readedRGB.R);
       f.write(settings.readedRGB.G);
       f.write(settings.readedRGB.B);
+      f.write(settings.dimmer);
       delay(50);
       f.close();
     }
   }
   else {
     printf("Reading values from mode_file\n");
-    File f = LittleFS.open(FILE_MODES, "r");
-    printf("File length: %d\n", f.size());
-    uint8_t temp[7];
-    f.read(temp, 7);
-    f.close();
     fillSettingsFromFs(&settings);
-    printf("Writed!\n");
+    printf("Readed!\n");
   }
 }
 
@@ -80,15 +77,36 @@ void saveSettingsToFs() {
     f.write(settings.readedRGB.R);
     f.write(settings.readedRGB.G);
     f.write(settings.readedRGB.B);
+    f.write(settings.dimmer);
     delay(50);
     f.close();
   }
   formAnswerInfo();
 }
 
+void fillSettingsFromFs(settings_t* temp_set) {
+  File f = LittleFS.open(FILE_MODES, "r");
+  uint8_t temp[8];
+  f.read(temp, 8);
+  *temp_set = {
+    mode : temp[0],
+    autoMode : temp[1],
+    speed: temp[3],
+    readedRGB : RgbColor(temp[4], temp[5], temp[6]),
+    chaseNum : temp[2],
+    dimmer : temp[7],
+  };
+  f.close();
+}
+
+void formatFS() {
+  LittleFS.format();
+  ESP.restart();
+}
+
 void processRequest() {
   printf("Command: %c, Option: %c, Mode: %d, Automode: %d\n", request.command, request.option, request.mode, request.autoMode);
-  printf("R: %d, G: %d, B: %d, save: %d\n", request.color.R, request.color.G, request.color.B, request.save);
+  printf("R: %d, G: %d, B: %d, save: %d\n", request.color.R, request.color.G, request.color.B, request.mask);
   Serial.println(request.sourceIP.toString());
   switch (request.command)
   {
@@ -162,13 +180,28 @@ void setRemoteColor() {
   if (settings.mode != request.mode || settings.autoMode != request.autoMode || settings.chaseNum != request.numEff) {
     recorder.tryStopReading();
   }
-  settings.mode = request.mode;
-  settings.autoMode = request.autoMode;
-  settings.chaseNum = request.numEff;
-  settings.speed = request.speed;
-  settings.readedRGB = request.color;
-  if(request.save) {
+  switch (request.mask)
+  {
+  case 1:
+    settings.dimmer = request.dimmer;
+    break;
+  case 2:
+    settings.readedRGB = request.color;
+    break;
+  case 4:
+    settings.speed = request.speed;
+    break;
+  case 8:
+    settings.mode = request.mode;
+    settings.autoMode = request.autoMode;
+    settings.chaseNum = request.numEff;
+    break;
+  case 255:
     saveSettingsToFs();
+    break;
+  default:
+    printf("**** Unknown mask\n");
+    break;
   }
 }
 
@@ -192,21 +225,9 @@ void formAnswerInfo() {
   wifiUdp.write(settings.readedRGB.R);
   wifiUdp.write(settings.readedRGB.G);
   wifiUdp.write(settings.readedRGB.B);
+  wifiUdp.write(temp_set.dimmer);
+  wifiUdp.write(settings.dimmer);
   wifiUdp.endPacket();
-}
-
-void fillSettingsFromFs(settings_t* temp_set) {
-  File f = LittleFS.open(FILE_MODES, "r");
-  uint8_t temp[7];
-  f.read(temp, 7);
-  *temp_set = {
-    mode : temp[0],
-    autoMode : temp[1],
-    speed: temp[3],
-    readedRGB : RgbColor(temp[4], temp[5], temp[6]),
-    chaseNum : temp[2],
-  };
-  f.close();
 }
 
 void chasePlayer() {
@@ -318,25 +339,31 @@ void test() {
   delay(500);
 }
 
-    void chaserColor(int speed) {
-        chaseColor = HslColor (chaseHue, 1.0f, 0.4f);
-        for (int i = 0; i < PixelCount; i++) strip.SetPixelColor(i, chaseColor);
-        //strip.Show();
-        showStrip();
-        chaseHue = chaseHue + 0.005f;
-        if (chaseHue >= 1.0) chaseHue = 0;
-        //delay(260 - speed);
-        delay(15);
-    }
+void chaserColor(int speed) {
+  chaseColor = HslColor (chaseHue, 1.0f, 0.4f);
+  for (int i = 0; i < PixelCount; i++) strip.SetPixelColor(i, chaseColor);
+  //strip.Show();
+    showStrip();
+    chaseHue = chaseHue + 0.005f;
+    if (chaseHue >= 1.0) chaseHue = 0;
+    //delay(260 - speed);
+    delay(15);
+  }
 
-  void  setStaticColor(RgbColor color) {
-    for (int i = 0; i < PixelCount; i++) {
-      strip.SetPixelColor(i, color);
-      //strip.Show();
-    }
-      showStrip();
-      //delay(20);
-    }
+void  setStaticColor(RgbColor color) {
+  for (int i = 0; i < PixelCount; i++) {
+    strip.SetPixelColor(i, color);
+     //strip.Show();
+   }
+   showStrip();
+   //delay(20);
+ }
+
+ void setStaticColorDimmed() {
+   float koeff = settings.dimmer*1.0/255;
+   RgbColor tmp_color(settings.readedRGB.R*koeff, settings.readedRGB.G*koeff, settings.readedRGB.B*koeff);
+   setStaticColor(tmp_color);
+ }
 
   //OTA - Flashing over Air
 void OTA_Func() {

@@ -52,7 +52,7 @@ void setup() {
   pinMode(STATUS_LED, OUTPUT);
   OTA_Func();
   recorder.setFunc(sendStartRecording, sendStopRecording);
-  //wifi_ticker.attach(6, reconnectWiFi);
+  wifi_ticker.attach(6, reconnectWiFi);
 }
 
 void loop() { 
@@ -206,7 +206,9 @@ void readWiFiUDP() {
           request.numEff = hData[7];
           request.speed = hData[8];
           request.color = RgbColor(hData[9], hData[10], hData[11]);
-          request.save = hData[12];
+          request.dimmer = hData[12];
+          //request.save = hData[12];
+          request.mask = hData[13];
         }
         processRequest();
       }
@@ -243,7 +245,8 @@ void processData() {
 void autoModeFunc() {
       switch (settings.autoMode) {
         case 0:
-          setStaticColor(settings.readedRGB);
+          //setStaticColor(settings.readedRGB);
+          setStaticColorDimmed();
           break;
         case 1:
           chasePlayer();
