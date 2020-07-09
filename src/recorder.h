@@ -10,7 +10,6 @@ class Recorder {
     bool _first;
     int first;
     bool _stopped;
-    char filename[5];
     int packetCount;
     uint8_t* wr_ext_flag;
     File file;
@@ -20,6 +19,7 @@ class Recorder {
     void (*funStop)();
 
     public:
+    char filename[5];
     Recorder(uint8_t pixel_num, uint8_t *wr_flag) {
         init();
         wr_ext_flag = wr_flag;

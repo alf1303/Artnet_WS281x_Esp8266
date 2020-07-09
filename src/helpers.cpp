@@ -81,7 +81,7 @@ void saveSettingsToFs() {
     delay(50);
     f.close();
   }
-  formAnswerInfo();
+  printf("Saved Settings\n");
 }
 
 void fillSettingsFromFs(settings_t* temp_set) {
@@ -106,7 +106,7 @@ void formatFS() {
 
 void processRequest() {
   printf("Command: %c, Option: %c, Mode: %d, Automode: %d\n", request.command, request.option, request.mode, request.autoMode);
-  printf("R: %d, G: %d, B: %d, save: %d\n", request.color.R, request.color.G, request.color.B, request.mask);
+  printf("R: %d, G: %d, B: %d, D: %d, mask: %d\n", request.color.R, request.color.G, request.color.B, request.dimmer, request.mask);
   Serial.println(request.sourceIP.toString());
   switch (request.command)
   {
@@ -127,7 +127,7 @@ void processGetCommand() {
   switch (request.option)
   {
   case 'S': //option for getting some settings
-    formAnswerInfo();
+    formAnswerInfo(ARTNET_PORT_OUT);
     break;
   
   default:
@@ -150,6 +150,9 @@ void processSetCommand() {
     break;
   case 'R':
     setReset();
+    break;
+  case 'F':
+    formatFS();
     break;
   case 'C':
   /*****/
@@ -196,6 +199,14 @@ void setRemoteColor() {
     settings.autoMode = request.autoMode;
     settings.chaseNum = request.numEff;
     break;
+  case 15:
+    settings.dimmer = request.dimmer;
+    settings.readedRGB = request.color;
+    settings.speed = request.speed;
+    settings.mode = request.mode;
+    settings.autoMode = request.autoMode;
+    settings.chaseNum = request.numEff;
+    break;
   case 255:
     saveSettingsToFs();
     break;
@@ -203,11 +214,12 @@ void setRemoteColor() {
     printf("**** Unknown mask\n");
     break;
   }
+    formAnswerInfo(ARTNET_PORT_OUT_UPD);
 }
 
-void formAnswerInfo() {
+void formAnswerInfo(int port) {
   fillSettingsFromFs(&temp_set);
-  wifiUdp.beginPacket(request.sourceIP, ARTNET_PORT_OUT);
+  wifiUdp.beginPacket(request.sourceIP, port);
   wifiUdp.write("CP");
   wifiUdp.write(UNI);
   wifiUdp.write(VERSION);
@@ -235,7 +247,10 @@ void chasePlayer() {
     chaserColor(settings.speed);
   }
   else if(settings.chaseNum >=0 && settings.chaseNum <= 9) {
-    sendWSread(recorder.readPacket(settings.chaseNum, settings.speed));
+    recorder.setFile(settings.chaseNum);
+    if(LittleFS.exists(recorder.filename)){
+      sendWSread(recorder.readPacket(settings.chaseNum, settings.speed));
+    }
   }
   else {
     printf("**** error chasenum\n");

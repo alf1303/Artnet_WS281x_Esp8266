@@ -66,6 +66,7 @@ extern request_t request;
 #define ARTNET_PORT 6454
 #define ARTNET_PORT_OUT 6455
 #define ARTNET_PORT_OUT_REC 6456
+#define ARTNET_PORT_OUT_UPD 6457
 #define ARTNET_HEADER 17
 
 //UDP Settings
@@ -103,7 +104,7 @@ void OTA_Func();
 void chasePlayer(); //for playing internal effects
 void effectPlayer(); //for playing effects from FS
 void initModes();
-void formAnswerInfo();
+void formAnswerInfo(int port);
 void processRequest();
 void processGetCommand();
 void processSetCommand();
