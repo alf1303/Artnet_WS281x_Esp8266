@@ -45,7 +45,7 @@ class Recorder {
     void setFile(int num) {
         sprintf(filename, "rec%d", num);
         fileNameSetted = true;
-        printf("*rec* setted filename: %s\n", filename);
+        printf("*rec* setted filename: %s\n", filename); //// ????? When commented wifi crashes, when selecting chase which have no file in FS
     }
 
     void openReadFile() {
