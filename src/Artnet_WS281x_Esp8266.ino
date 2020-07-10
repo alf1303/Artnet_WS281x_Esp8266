@@ -52,7 +52,7 @@ void setup() {
   pinMode(STATUS_LED, OUTPUT);
   OTA_Func();
   recorder.setFunc(sendStartRecording, sendStopRecording);
-  wifi_ticker.attach(6, reconnectWiFi);
+  //wifi_ticker.attach(6, reconnectWiFi);
 }
 
 void loop() { 
@@ -238,6 +238,16 @@ void processData() {
       readWiFiUDP();
       break;
     case 3:
+      readWiFiUDP();
+      if(uniData[5] != fixtureData.effect) recorder.tryStopReading();
+      fillFixtureData();
+      if(fixtureData.effect == 0) {
+        RgbColor dmxColor(fixtureData.red, fixtureData.green, fixtureData.blue);
+        setStaticColorDimmed(fixtureData.dimmer, dmxColor);
+      }
+      else{
+        chasePlayer(fixtureData.effect, fixtureData.speed, fixtureData.dimmer);
+      }
       break;
   }
 }
@@ -246,10 +256,10 @@ void autoModeFunc() {
       switch (settings.autoMode) {
         case 0:
           //setStaticColor(settings.readedRGB);
-          setStaticColorDimmed();
+          setStaticColorDimmed(settings.dimmer, settings.readedRGB);
           break;
         case 1:
-          chasePlayer();
+          chasePlayer(settings.chaseNum, settings.speed, settings.dimmer);
           break;
         case 3:
           effectPlayer();
@@ -267,14 +277,15 @@ void sendWS() {
     showStrip();
 }
 
-void sendWSread(uint8_t* dataa) {
+void sendWSread(uint8_t* dataa, uint8_t dimmer) {
   uint8_t re, gr, bl;
+  float koeff = dimmer*1.0/255;
     for (int i = 0; i < PixelCount; i++)
     {
       re = *dataa++;
       gr = *dataa++;
       bl = *dataa++;
-        RgbColor color(re, gr, bl);
+        RgbColor color(re*koeff, gr*koeff, bl*koeff);
         strip.SetPixelColor(i, color);
     } 
     //strip.Show(); 

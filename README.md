@@ -42,3 +42,21 @@ AUTOMODE has a STATIC submode for showing static color which is writed in FS and
 
    - channel 512 - start recording (250 - start recording without autodetection of effect loop, 251 - 255 start recording with autodetection) Autodetection of loop means that when 
   esp8266 detects, that while recording it receives packet, similar as was in 20th frame from the begining, it automatically stops recording
+
+  FIXTURE MODE (DMX):
+
+  1 - Dimmer
+
+  2 - Shutter
+
+  3 - Red
+
+  4 - Green
+
+  5 - Blue
+
+  6 - Effect
+
+  7 - Speed
+
+  When Effect is bigger than 0, Red Green Blue and Shutter are inactive

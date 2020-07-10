@@ -3,7 +3,6 @@
 #include <math.h>
 
 class Recorder {
-    bool fileNameSetted;
     bool fileOpened;
     bool _writing;
     bool _reading;
@@ -20,6 +19,7 @@ class Recorder {
 
     public:
     char filename[5];
+    bool fileNameSetted;
     Recorder(uint8_t pixel_num, uint8_t *wr_flag) {
         init();
         wr_ext_flag = wr_flag;

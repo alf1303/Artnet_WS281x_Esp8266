@@ -12,6 +12,7 @@ settings_t settings = {
 };
 settings_t temp_set;
 request_t request;
+fixture_t fixtureData;
 
  Recorder recorder = Recorder(PixelCount, &writingFlag);
 
@@ -242,14 +243,14 @@ void formAnswerInfo(int port) {
   wifiUdp.endPacket();
 }
 
-void chasePlayer() {
-  if (settings.chaseNum == 11) {
-    chaserColor(settings.speed);
+void chasePlayer(uint8_t chaseNum, uint8_t speed, uint8_t dimmer) {
+  if (chaseNum == 11) {
+    chaserColor(speed);
   }
-  else if(settings.chaseNum >=0 && settings.chaseNum <= 9) {
-    recorder.setFile(settings.chaseNum);
+  else if(chaseNum > 0 && chaseNum <= 9) {
+    recorder.setFile(chaseNum);
     if(LittleFS.exists(recorder.filename)){
-      sendWSread(recorder.readPacket(settings.chaseNum, settings.speed));
+      sendWSread(recorder.readPacket(chaseNum, speed), dimmer);
     }
   }
   else {
@@ -374,10 +375,20 @@ void  setStaticColor(RgbColor color) {
    //delay(20);
  }
 
- void setStaticColorDimmed() {
-   float koeff = settings.dimmer*1.0/255;
-   RgbColor tmp_color(settings.readedRGB.R*koeff, settings.readedRGB.G*koeff, settings.readedRGB.B*koeff);
+ void setStaticColorDimmed(uint8_t dimmer, RgbColor col) {
+   float koeff = dimmer*1.0/255;
+   RgbColor tmp_color(col.R*koeff, col.G*koeff, col.B*koeff);
    setStaticColor(tmp_color);
+ }
+
+ void fillFixtureData() {
+   fixtureData.dimmer = uniData[0];
+   fixtureData.shutter = uniData[1];
+   fixtureData.red = uniData[2];
+   fixtureData.green = uniData[3];
+   fixtureData.blue = uniData[4];
+   fixtureData.effect = uniData[5];
+   fixtureData.speed = uniData[6];
  }
 
   //OTA - Flashing over Air

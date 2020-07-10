@@ -59,6 +59,17 @@ typedef struct {
 } request_t;
 extern request_t request;
 
+typedef struct {
+    uint8_t dimmer;
+    uint8_t shutter;
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t effect;
+    uint8_t speed;
+} fixture_t;
+extern fixture_t fixtureData;
+
 // ARTNET CODES
 #define ARTNET_DATA 0x50
 #define ARTNET_POLL 0x20
@@ -98,10 +109,10 @@ char* convertModes(int mod); //Converts digital values to String names for Gener
 char* convertAutoModes(int automod); //Converts digital values to String names for Auto modes
 void chaserColor(int speed);
 void setStaticColor(RgbColor);
-void setStaticColorDimmed();
+void setStaticColorDimmed(uint8_t dimmer, RgbColor col);
 void test();
 void OTA_Func();
-void chasePlayer(); //for playing internal effects
+void chasePlayer(uint8_t chaseNum, uint8_t speed, uint8_t dimmer); //for playing internal effects
 void effectPlayer(); //for playing effects from FS
 void initModes();
 void formAnswerInfo(int port);
@@ -115,6 +126,7 @@ void saveSettingsToFs();
 void showStrip();
 void setReset();
 void setRemoteColor();
-void sendWSread(uint8_t* data);
+void sendWSread(uint8_t* data, uint8_t dimmer);
 void sendStartRecording();
 void sendStopRecording();
+void fillFixtureData();
