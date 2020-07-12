@@ -92,7 +92,7 @@ class Recorder {
     
     bool comparePackets(uint8_t* first, uint8_t* current, size_t p_size) {
         while(p_size > 0) {
-            if(abs(*first++ - *current++) > 2) {
+            if(abs(*first++ - *current++) > 1) {
                 //printf("*rec* stop compare: %d\n", pcount);
                 return false;
             }

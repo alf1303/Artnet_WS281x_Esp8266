@@ -145,10 +145,9 @@ void readWiFiUDP() {
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 18);
-        //printf("Uni: %d\n", hData[14]);
-     if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
-       //Serial.print("Source IP: ");
-       //Serial.println(wifiUdp.remoteIP().toString());
+
+     //if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
+       if ( hData[0] == 'A') {
          uniSize = (hData[16] << 8) + (hData[17]);
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
@@ -196,7 +195,7 @@ void readWiFiUDP() {
          #endif
       }    
 
-      else if (hData[0] == 'C' && hData[1] == 'P' && hData[2] == UNI) {
+      else if (hData[0] == 'C' && hData[2] == UNI) {
         request.command = hData[3];
         request.option = hData[4];
         request.sourceIP = wifiUdp.remoteIP();
