@@ -6,13 +6,13 @@
 #include "recorder.h"
 #define VERSION "v_0.6.3"
 
-#define UNI 27 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 22 // change this for setting node universe and last byte of IP Address************************************
 
 //#define NO_WS
 //#define NO_ARTNET
 #define ADV_DEBUG
 #define DEBUGMODE
-#define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
+//#define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #ifdef DROP_PACKETS 
 #define MIN_TIME 15 // Minimum time duration between 2 packets for allowing show packets (in milliseconds) 
