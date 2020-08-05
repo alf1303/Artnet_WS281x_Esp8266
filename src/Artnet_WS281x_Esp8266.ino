@@ -77,7 +77,7 @@ boolean ConnectWifi(const char *ssid) {
   WiFi.config(ip, gateway, subnet_ip);
   WiFi.setPhyMode(WIFI_PHY_MODE_11G);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  WiFi.setOutputPower(10.0); //16.4 20max
+  WiFi.setOutputPower(16.0); //16.4 20max
   WiFi.enableAP(0);
   if(WiFi.SSID() == ssid && WiFi.psk() == password) {
     printf("**** Loading WiFi settings from ROM\n");
@@ -145,7 +145,7 @@ void readWiFiUDP() {
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 18);
-
+        //printf("0 - %d, 1 - %d, 2 - %d", hData[0], hData[1], hData[2]);
      //if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
        if ( hData[0] == 'A') {
          uniSize = (hData[16] << 8) + (hData[17]);
@@ -194,8 +194,8 @@ void readWiFiUDP() {
             #endif
          #endif
       }    
-
       else if (hData[0] == 'C' && hData[2] == UNI) {
+        //printf("taddammmm\n");
         request.command = hData[3];
         request.option = hData[4];
         request.sourceIP = wifiUdp.remoteIP();
