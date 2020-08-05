@@ -39,7 +39,7 @@ boolean ConnectWifi() {
   WiFi.config(ip, gateway, subnet_ip);
   WiFi.setPhyMode(WIFI_PHY_MODE_11G);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  WiFi.setOutputPower(10.0); //16.4 20 max
+  WiFi.setOutputPower(17.0); //16.4 20 max
   WiFi.enableAP(0);
   if(WiFi.SSID() == ssid1 && WiFi.psk() == password) {
     printf("**** Loading WiFi settings from ROM\n");
