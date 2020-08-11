@@ -77,7 +77,7 @@ boolean ConnectWifi(const char *ssid) {
   WiFi.config(ip, gateway, subnet_ip);
   WiFi.setPhyMode(WIFI_PHY_MODE_11G);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  WiFi.setOutputPower(16.0); //16.4 20max
+  WiFi.setOutputPower(17.0); //16.4 20max
   WiFi.enableAP(0);
   if(WiFi.SSID() == ssid && WiFi.psk() == password) {
     printf("**** Loading WiFi settings from ROM\n");
@@ -189,7 +189,7 @@ void readWiFiUDP() {
             #ifndef NO_WS
               long oldd = micros();
               recorder.writePacket(uniData, uniData[509], uniData[510], uniData[511]);
-              if (settings.mode == STATUS_WIFI) sendWS();
+              if (settings.mode == STATUS_WIFI && !recorder._writing) sendWS(); *****************************************
               //printf("%d %d ms_wifi ** wsTime: %lu\n", mycounter, dur, micros() - oldd);
             #endif
          #endif

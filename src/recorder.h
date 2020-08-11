@@ -4,7 +4,6 @@
 
 class Recorder {
     bool fileOpened;
-    bool _writing;
     bool _reading;
     bool _first;
     int first;
@@ -20,6 +19,7 @@ class Recorder {
     public:
     char filename[5];
     bool fileNameSetted;
+    bool _writing;
     Recorder(uint8_t pixel_num, uint8_t *wr_flag) {
         init();
         wr_ext_flag = wr_flag;
@@ -90,9 +90,9 @@ class Recorder {
         }
     }
     
-    bool comparePackets(uint8_t* first, uint8_t* current, size_t p_size) {
+    bool comparePackets(uint8_t* first, uint8_t* current, size_t p_size, uint8_t delta) {
         while(p_size > 0) {
-            if(abs(*first++ - *current++) > 1) {
+            if(abs(*first++ - *current++) > delta) {
                 //printf("*rec* stop compare: %d\n", pcount);
                 return false;
             }
@@ -144,7 +144,8 @@ class Recorder {
             else {
                 bool match;
                 if (start != 250) {
-                   match = comparePackets(firstPacket, data, bytesToSave);
+                    uint8_t delta = start%250;
+                   match = comparePackets(firstPacket, data, bytesToSave, delta);
                 }
                 else {
                     match = false;
