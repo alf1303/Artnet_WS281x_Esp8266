@@ -36,7 +36,7 @@ AUTOMODE has a STATIC submode for showing static color which is writed in FS and
 
   RECORDING process:
 
-   - channel 510 - number of stored effect (should be 0-9)
+   - channel 510 - number of stored effect (should be 11-99)
 
    - channel 511 - stop recording (255 - stop)
 

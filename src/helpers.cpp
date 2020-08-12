@@ -244,10 +244,10 @@ void formAnswerInfo(int port) {
 }
 
 void chasePlayer(uint8_t chaseNum, uint8_t speed, uint8_t dimmer) {
-  if (chaseNum == 11) {
+  if (chaseNum == 1) {
     chaserColor(speed);
   }
-  else if(chaseNum > 0 && chaseNum <= 9) {
+  else if(chaseNum >= 11 && chaseNum <= 19) {
     recorder.setFile(chaseNum);
     if(LittleFS.exists(recorder.filename)){
       sendWSread(recorder.readPacket(chaseNum, speed), dimmer);

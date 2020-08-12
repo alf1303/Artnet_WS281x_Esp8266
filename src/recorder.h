@@ -17,7 +17,7 @@ class Recorder {
     void (*funStop)();
 
     public:
-    char filename[5];
+    char filename[6];
     bool fileNameSetted;
     bool _writing;
     Recorder(uint8_t pixel_num, uint8_t *wr_flag) {

@@ -189,7 +189,7 @@ void readWiFiUDP() {
             #ifndef NO_WS
               long oldd = micros();
               recorder.writePacket(uniData, uniData[509], uniData[510], uniData[511]);
-              if (settings.mode == STATUS_WIFI && !recorder._writing) sendWS(); *****************************************
+              if (settings.mode == STATUS_WIFI) sendWS(); //*****************************************
               //printf("%d %d ms_wifi ** wsTime: %lu\n", mycounter, dur, micros() - oldd);
             #endif
          #endif

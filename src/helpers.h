@@ -6,7 +6,7 @@
 #include "recorder.h"
 #define VERSION "v_0.6.4"
 
-#define UNI 38 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 27 // change this for setting node universe and last byte of IP Address************************************
 
 //#define NO_WS
 //#define NO_ARTNET
