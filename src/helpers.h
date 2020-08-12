@@ -4,9 +4,9 @@
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
 #include "recorder.h"
-#define VERSION "v_0.6.4"
+#define VERSION "v_0.6.5"
 
-#define UNI 27 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 28 // change this for setting node universe and last byte of IP Address************************************
 
 //#define NO_WS
 //#define NO_ARTNET

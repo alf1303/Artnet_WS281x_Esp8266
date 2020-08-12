@@ -273,10 +273,25 @@ void sendStartRecording() {
 
 void sendStopRecording() {
   printf("sendStopRecording\n");
+size_t f_size = 1;
+  char size_string[7];
+  //size_string = (char*)"xxxxxxx";
+  if (LittleFS.exists(recorder.filename)) {
+    File f = LittleFS.open(recorder.filename, "r");
+    f_size = f.size();
+    sprintf(size_string, "%d", f_size);
+    f.close();
+  }
+  else f_size = 0;
+  uint8_t sizelength = (uint8_t)log10(f_size)+1;
+  printf("%s %s\n", recorder.filename, size_string);
   wifiUdp.beginPacket(request.sourceIP, ARTNET_PORT_OUT_REC);
   wifiUdp.write("CP");
   wifiUdp.write(UNI);
   wifiUdp.write('f');
+  wifiUdp.write(sizelength);
+  wifiUdp.write(recorder.filename);
+  wifiUdp.write(size_string);
   wifiUdp.endPacket();
 }
 
