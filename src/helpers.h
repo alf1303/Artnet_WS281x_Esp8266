@@ -3,7 +3,7 @@
 #include <ArduinoOTA.h>
 #include <NeoPixelBus.h>
 
-#define UNI 28 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 21 // change this for setting node universe and last byte of IP Address************************************
 #define PixelCount 120  //Change for setting pixel count *****************************************
 // ARTNET
 #define ARTNET_PORT 6454
