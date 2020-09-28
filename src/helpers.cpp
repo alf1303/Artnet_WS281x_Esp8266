@@ -9,6 +9,8 @@ settings_t settings = {
   chaseNum : 0, //number of internal chase
   dimmer : 255,
   //recordedEffNum : 0 //number of recorded effect
+  universe: UNIVERSE,
+  address: UNI%21*24 + 1
 };
 settings_t temp_set;
 request_t request;
@@ -45,6 +47,16 @@ void initModes() {
       printf("**** Open mode_file for writing fails\n");
     } 
     else {
+      uint8_t addr_low = 0;
+      uint8_t addr_high = 0;
+      if(settings.address > 255) {
+        addr_low = 255;
+        addr_high = settings.address%255;
+      }
+      else {
+        addr_low = settings.address;
+        addr_high = 0;
+      }
       printf("**** mode_file opened. Writing...\n");
       f.write(settings.mode);
       f.write(settings.autoMode);
@@ -54,6 +66,9 @@ void initModes() {
       f.write(settings.readedRGB.G);
       f.write(settings.readedRGB.B);
       f.write(settings.dimmer);
+      f.write(settings.universe);
+      f.write(addr_low);
+      f.write(addr_high);
       delay(50);
       f.close();
     }
@@ -71,6 +86,16 @@ void saveSettingsToFs() {
       printf("**** Open mode_file for writing fails\n");
   }
   else {
+    uint8_t addr_low = 0;
+    uint8_t addr_high = 0;
+    if(settings.address > 255) {
+      addr_low = 255;
+      addr_high =  settings.address%255;
+    }
+    else {
+      addr_low = settings.address;
+      addr_high = 0;
+    }
     f.write(settings.mode);
     f.write(settings.autoMode);
     f.write(settings.chaseNum);
@@ -79,6 +104,9 @@ void saveSettingsToFs() {
     f.write(settings.readedRGB.G);
     f.write(settings.readedRGB.B);
     f.write(settings.dimmer);
+    f.write(settings.universe);
+    f.write(addr_low);
+    f.write(addr_high);
     delay(50);
     f.close();
   }
@@ -87,8 +115,8 @@ void saveSettingsToFs() {
 
 void fillSettingsFromFs(settings_t* temp_set) {
   File f = LittleFS.open(FILE_MODES, "r");
-  uint8_t temp[8];
-  f.read(temp, 8);
+  uint8_t temp[11];
+  f.read(temp, 11);
   *temp_set = {
     mode : temp[0],
     autoMode : temp[1],
@@ -96,6 +124,8 @@ void fillSettingsFromFs(settings_t* temp_set) {
     readedRGB : RgbColor(temp[4], temp[5], temp[6]),
     chaseNum : temp[2],
     dimmer : temp[7],
+    universe : temp[8],
+    address : temp[9] + temp[10],
   };
   f.close();
 }
@@ -208,6 +238,11 @@ void setRemoteColor() {
     settings.autoMode = request.autoMode;
     settings.chaseNum = request.numEff;
     break;
+  case 32:
+    settings.universe = request.universe;
+    settings.address = request.address;
+    saveSettingsToFs();
+    break;
   case 255:
     saveSettingsToFs();
     break;
@@ -218,10 +253,14 @@ void setRemoteColor() {
     formAnswerInfo(ARTNET_PORT_OUT_UPD);
 }
 
+void setDmxAddress() {
+
+}
+
 void formAnswerInfo(int port) {
   fillSettingsFromFs(&temp_set);
   wifiUdp.beginPacket(request.sourceIP, port);
-  wifiUdp.write("CP");
+  wifiUdp.write("CP"); //0-1
   wifiUdp.write(UNI);
   wifiUdp.write(VERSION);
   wifiUdp.write(temp_set.mode);
@@ -237,10 +276,16 @@ void formAnswerInfo(int port) {
   wifiUdp.write(temp_set.readedRGB.B);
   wifiUdp.write(settings.readedRGB.R);
   wifiUdp.write(settings.readedRGB.G);
-  wifiUdp.write(settings.readedRGB.B);
-  wifiUdp.write(temp_set.dimmer);
-  wifiUdp.write(settings.dimmer);
+  wifiUdp.write(settings.readedRGB.B); //23
+  wifiUdp.write(temp_set.dimmer); //24
+  wifiUdp.write(settings.dimmer); //25
+  wifiUdp.write(settings.universe); //26
+  if(settings.address - 255 > 0) wifiUdp.write(255);
+  else wifiUdp.write(0);
+  wifiUdp.write(settings.address);
+  wifiUdp.write(settings.address); //27-28
   wifiUdp.endPacket();
+  printf("a: %d, u: %d\n", settings.address, settings.universe);
 }
 
 void chasePlayer(uint8_t chaseNum, uint8_t speed, uint8_t dimmer) {

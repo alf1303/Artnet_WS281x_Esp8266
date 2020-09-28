@@ -6,7 +6,8 @@
 #include "recorder.h"
 #define VERSION "v_0.6.5"
 
-#define UNI 31 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 35 // change this for setting node universe and last byte of IP Address************************************
+#define UNIVERSE 21 //actual universe for receiving DMX
 
 //#define NO_WS
 //#define NO_ARTNET
@@ -37,6 +38,8 @@ typedef struct {
     uint8_t chaseNum; //number of internal chase
     uint8_t dimmer; //intensity
     //uint8_t recordedEffNum; //number of recorded effect
+    uint8_t universe;
+    uint16_t address;
 } settings_t;
 extern settings_t settings;
 extern settings_t temp_set;
@@ -56,6 +59,8 @@ typedef struct {
     IPAddress sourceIP;
     //bool save;
     uint8_t mask;
+    uint8_t universe;
+    uint16_t address;
 } request_t;
 extern request_t request;
 
@@ -127,6 +132,7 @@ void showStrip();
 void setReset();
 void setRemoteColor();
 void sendWSread(uint8_t* data, uint8_t dimmer);
+void sendWS_addressed();
 void sendStartRecording();
 void sendStopRecording();
 void fillFixtureData();

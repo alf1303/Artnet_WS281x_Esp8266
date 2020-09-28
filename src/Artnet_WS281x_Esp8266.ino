@@ -25,7 +25,7 @@ int mycounter = -1; //counter of packets, need only for debugging and testing fo
 uint8_t writingFlag = 0; //indicates if esp is writing data to fs (when writing - 1 - DROP PACKETS is disabled, when - 0 - DROP PACKET enabled)
 
 //Wifi Settings
-const uint8_t startUniverse = UNI; //****************************
+const uint8_t startUniverse = settings.universe; //****************************
 IPAddress ip(2, 0, 0, UNI); //IP ADDRESS NODEMCU ****************
 IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
@@ -208,6 +208,9 @@ void readWiFiUDP() {
           request.dimmer = hData[12];
           //request.save = hData[12];
           request.mask = hData[13];
+          request.universe = hData[14];
+          request.address = hData[15] + hData[16];
+          printf("hdata15: %d, hdata16: %d, addr: %d\n", hData[15], hData[16], hData[15] + hData[16]);
         }
         processRequest();
       }
@@ -237,6 +240,10 @@ void processData() {
       readWiFiUDP();
       break;
     case 3:
+      readWiFiUDP();
+      sendWS_addressed();
+      break;
+    case 4:
       readWiFiUDP();
       if(uniData[5] != fixtureData.effect) recorder.tryStopReading();
       fillFixtureData();
@@ -271,6 +278,25 @@ void sendWS() {
     {
         RgbColor color(uniData[i * 3], uniData[i * 3 + 1], uniData[i * 3 + 2]);
         strip.SetPixelColor(i, color);
+    } 
+    //strip.Show(); 
+    showStrip();
+}
+
+void sendWS_addressed() {
+  int k = 1;
+  int addr = settings.address;
+  RgbColor color(uniData[settings.address], uniData[settings.address + 1], uniData[settings.address + 2]);
+    for (int i = 0; i < PixelCount; i++)
+    {
+      if(k == 16) {
+        addr = addr + 3;
+        k = 1;
+        RgbColor color(uniData[addr], uniData[addr + 1], uniData[addr + 2]);
+      }
+        
+        strip.SetPixelColor(i, color);
+        k++;
     } 
     //strip.Show(); 
     showStrip();
