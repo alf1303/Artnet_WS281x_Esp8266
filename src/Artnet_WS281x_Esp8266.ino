@@ -147,7 +147,7 @@ void readWiFiUDP() {
         wifiUdp.read(hData, 18);
         //printf("0 - %d, 1 - %d, 2 - %d", hData[0], hData[1], hData[2]);
      //if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
-       if ( hData[0] == 'A') {
+       if ( hData[0] == 'A' && hData[14] == settings.universe) {
          uniSize = (hData[16] << 8) + (hData[17]);
          wifiUdp.read(uniData, uniSize);
          universe = hData[14];
@@ -285,18 +285,23 @@ void sendWS() {
 
 void sendWS_addressed() {
   int k = 1;
-  int addr = settings.address;
-  RgbColor color(uniData[settings.address], uniData[settings.address + 1], uniData[settings.address + 2]);
+  int addr = settings.address - 1;
+  RgbColor colorAddr(uniData[addr], uniData[addr + 1], uniData[addr + 2]);
+  //printf("addr: %d, unidata[addr]: %d\n", addr, uniData[addr]);
     for (int i = 0; i < PixelCount; i++)
     {
+        //printf("i: %d, addr: %d, color: %d %d %d\n", i, addr, colorAddr.R, colorAddr.G, colorAddr.B);
       if(k == 16) {
         addr = addr + 3;
         k = 1;
-        RgbColor color(uniData[addr], uniData[addr + 1], uniData[addr + 2]);
+        //color.R = uniData[addr];
+        //color.G = uniData[addr + 1];
+        //color.B = uniData[addr + 2];
+        colorAddr = RgbColor(uniData[addr], uniData[addr + 1], uniData[addr + 2]);
       }
         
-        strip.SetPixelColor(i, color);
-        k++;
+        strip.SetPixelColor(i, colorAddr);
+        k = k + 1;
     } 
     //strip.Show(); 
     showStrip();
