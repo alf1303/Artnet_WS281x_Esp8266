@@ -26,8 +26,10 @@ uint8_t writingFlag = 0; //indicates if esp is writing data to fs (when writing 
 
 //Wifi Settings
 const uint8_t startUniverse = settings.universe; //****************************
-IPAddress ip(2, 0, 0, UNI); //IP ADDRESS NODEMCU ****************
-IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
+//IPAddress ip(2, 0, 0, UNI); //IP ADDRESS NODEMCU ****************
+//IPAddress gateway(2, 0, 0, 101); //IP ADDRESS РОУТЕРА 
+IPAddress ip(192, 168, 0, UNI); //IP ADDRESS NODEMCU ****************
+IPAddress gateway(192, 168, 0, 101); //IP ADDRESS РОУТЕРА 
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* password = "esp18650"; //PASSW 
 
@@ -210,7 +212,8 @@ void readWiFiUDP() {
           request.mask = hData[13];
           request.universe = hData[14];
           request.address = hData[15] + hData[16];
-          printf("hdata15: %d, hdata16: %d, addr: %d\n", hData[15], hData[16], hData[15] + hData[16]);
+          request.reverse = hData[17];
+          printf("hdata15: %d, hdata16: %d, addr: %d, reverse: %d\n", hData[15], hData[16], hData[15] + hData[16], hData[17]);
         }
         processRequest();
       }
@@ -274,10 +277,15 @@ void autoModeFunc() {
 }
 
 void sendWS() {
-    for (int i = 0; i < PixelCount; i++)
+      for (int i = 0; i < PixelCount; i++)
     {
         RgbColor color(uniData[i * 3], uniData[i * 3 + 1], uniData[i * 3 + 2]);
-        strip.SetPixelColor(i, color);
+        if(settings.reverse == 1) {
+          strip.SetPixelColor(PixelCount - i - 1, color);
+        }
+        else {
+          strip.SetPixelColor(i, color);
+        }
     } 
     //strip.Show(); 
     showStrip();
@@ -300,7 +308,12 @@ void sendWS_addressed() {
         colorAddr = RgbColor(uniData[addr], uniData[addr + 1], uniData[addr + 2]);
       }
         
-        strip.SetPixelColor(i, colorAddr);
+        if(settings.reverse == 1) {
+          strip.SetPixelColor(PixelCount - i - 1, colorAddr);
+        }
+        else {
+          strip.SetPixelColor(i, colorAddr);
+        }
         k = k + 1;
     } 
     //strip.Show(); 

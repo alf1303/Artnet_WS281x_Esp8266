@@ -10,7 +10,8 @@ settings_t settings = {
   dimmer : 255,
   //recordedEffNum : 0 //number of recorded effect
   universe: UNIVERSE,
-  address: UNI%21*24 + 1
+  address: UNI%21*24 + 1,
+  reverse: false
 };
 settings_t temp_set;
 request_t request;
@@ -69,6 +70,7 @@ void initModes() {
       f.write(settings.universe);
       f.write(addr_low);
       f.write(addr_high);
+      f.write(settings.reverse);
       delay(50);
       f.close();
     }
@@ -107,6 +109,7 @@ void saveSettingsToFs() {
     f.write(settings.universe);
     f.write(addr_low);
     f.write(addr_high);
+    f.write(settings.reverse);
     delay(50);
     f.close();
   }
@@ -115,8 +118,8 @@ void saveSettingsToFs() {
 
 void fillSettingsFromFs(settings_t* temp_set) {
   File f = LittleFS.open(FILE_MODES, "r");
-  uint8_t temp[11];
-  f.read(temp, 11);
+  uint8_t temp[12];
+  f.read(temp, 12);
   *temp_set = {
     mode : temp[0],
     autoMode : temp[1],
@@ -126,6 +129,7 @@ void fillSettingsFromFs(settings_t* temp_set) {
     dimmer : temp[7],
     universe : temp[8],
     address : temp[9] + temp[10],
+    reverse: temp[11],
   };
   f.close();
 }
@@ -241,6 +245,7 @@ void setRemoteColor() {
   case 32:
     settings.universe = request.universe;
     settings.address = request.address;
+    settings.reverse = request.reverse;
     saveSettingsToFs();
     break;
   case 255:
@@ -284,6 +289,7 @@ void formAnswerInfo(int port) {
   else wifiUdp.write(0);
   wifiUdp.write(settings.address);
   wifiUdp.write(settings.address); //27-28
+  wifiUdp.write(settings.reverse);
   wifiUdp.endPacket();
   printf("a: %d, u: %d\n", settings.address, settings.universe);
 }

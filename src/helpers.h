@@ -6,8 +6,8 @@
 #include "recorder.h"
 #define VERSION "v_0.7.1"
 
-#define UNI 35 // change this for setting node universe and last byte of IP Address************************************
-#define UNIVERSE 21 //actual universe for receiving DMX
+#define UNI 33 // change this for setting node universe and last byte of IP Address************************************
+#define UNIVERSE 19 //actual universe for receiving DMX
 
 //#define NO_WS
 //#define NO_ARTNET
@@ -40,7 +40,8 @@ typedef struct {
     //uint8_t recordedEffNum; //number of recorded effect
     uint8_t universe;
     uint16_t address;
-    //bool pixelOrder;
+    uint8_t reverse;
+    //uint8_t segmentNum;
 } settings_t;
 extern settings_t settings;
 extern settings_t temp_set;
@@ -62,6 +63,7 @@ typedef struct {
     uint8_t mask;
     uint8_t universe;
     uint16_t address;
+    uint8_t reverse;
 } request_t;
 extern request_t request;
 
