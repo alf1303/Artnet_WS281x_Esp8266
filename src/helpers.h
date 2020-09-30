@@ -4,7 +4,7 @@
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
 #include "recorder.h"
-#define VERSION "v_0.6.5"
+#define VERSION "v_0.7.1"
 
 #define UNI 35 // change this for setting node universe and last byte of IP Address************************************
 #define UNIVERSE 21 //actual universe for receiving DMX
@@ -40,6 +40,7 @@ typedef struct {
     //uint8_t recordedEffNum; //number of recorded effect
     uint8_t universe;
     uint16_t address;
+    //bool pixelOrder;
 } settings_t;
 extern settings_t settings;
 extern settings_t temp_set;
