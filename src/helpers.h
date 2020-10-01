@@ -6,7 +6,7 @@
 #include "recorder.h"
 #define VERSION "v_0.7.1"
 
-#define UNI 33 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 35 // change this for setting node universe and last byte of IP Address************************************
 #define UNIVERSE 19 //actual universe for receiving DMX
 
 //#define NO_WS
