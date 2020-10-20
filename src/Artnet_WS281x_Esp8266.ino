@@ -17,12 +17,12 @@
 #define ADV_DEBUG
 #define DEBUGMODE
 #define DROP_PACKETS //In this mode packets, arrived less then MIN_TIME ms are dropped
-#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
+//#define LAN_MODE //Comment if using only in WiFi mode (EXPERIMENTAL)
 #define NO_SIG 5000 // Maximum Time for detecting that there is no signal coming
 #include "helpers.h"
 
 //Ethernet Settings
-#define UNI 0 //************************************
+#define UNI 29 //************************************
 const byte mac[] = {0x44, 0xB3, 0x3D, 0xFF, 0xAE, 0x29}; // Last byte same as ip **************************
 //const char* ssid; //SSID 
 const char* ssid1 = (char*)"udp";
