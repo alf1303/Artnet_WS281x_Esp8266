@@ -1,40 +1,67 @@
 # Artnet_WS281x_Esp8266
- Controls WS2812/13 via Artnet using esp8266 and ENC28j60 for LAN
+ Controls WS2812/13 via Artnet using esp8266
 
-#define FLASH_SELECT
-Use this if changing runmode from WIFI to LAN should be with inbuilt FLASH button. While loading ESP reads byte from address '0' in EEPROM (1 - LAN mode, 0, 2-255 - WIFI mode) and set up ESP to according mode. Pressing FLASH button changes Led indicator (on - LAN, off - WIFI) and writes to EEPROM new value, which will be used during next load.
-
-#define EXTERNAL_SELECT
-Use this if changing runmode should be with external button, connected to D1 (GPIO 5). LOW is WIFI, HIGH is LAN. Setting mode performs while loading ESP. Led indicator shows current mode (ON - WIFI, OFF - LAN)
+ Change #define UNI 33 for assigning destination artnet universe and IP Address
 
 #define DROP_PACKETS
-Using this allow dropping packets, if interval after previous packets is less then MIN_TIME (30ms for now)
-#define MIN_TIME 15 Minimum time duration in ms between 2 received packets, when packet will be shown. (15 for Continuous mode, 30 for reduced)
+Using this allow dropping packets, if interval after previous packet is less then MIN_TIME (30ms for now)
+
+#define MIN_TIME 15 Minimum time duration in ms between 2 received packets, when packet will be shown. (recommended - 15 for Continuous mode, 30 for reduced)
 
 GENERAL INFO:
+
 WIFI SSID: udp
+
 WIFI PASSWORD: esp18650
+
 Router IP Address: 2.0.0.101
+
 Nodes IP Address range: 2.0.0.21 - 2.0.0.63
+
 Nodes works in unicast mode ONLY
-For MagicQ use CONTINUOUS mode
+
+For MagicQ use CONTINUOUS mode (33fps) or Reduced (15fps) or Mixed+Changes
+
 Nodes Artnet universes range: 21-63 (node's working universe is equal to last IP address byte)
 
 WORKING MODES:
-WIFI
--Led near RESET button is OFF
-LAN
--Led near RESET button is ON
-AUTOMODE
--Led near ESP chip is ON, when OFF, AUTOMODE is disabled
 
-Changing Modes:
-- Pressing button FLASH shortly changes mode between WIFI and LAN  (Led near RESET button indicates)
-  Switching power OFF/ON needed for starting new selected mode
+ - WIFI
 
-- Pressing button FLASH for more than 5 seconds switch to AUTOMODE (Led near ESP chip indicates)
-  Then by shortly presses FLASH button you can scroll between automodes (CHASE, WHITE, RED, GREEN, BLUE)
+ - #LAN not active  now
 
-- Press FLASH button for more then 5 seconds for switching to Artnet mode (WIFI or LAN)
+ - AUTOMODE
 
-- RECORDED mode. Saves reveived packet to FS and play it after reset(ON/OFF). For entering this mode you need to send ARTNET packet with needed data (510 = 170leds*3colors) 510 bytes, and byte number 511 have to hold value 175. For saving, ESP needs to receive at least 25 packets with data and byte number 512 setted to 201.
+AUTOMODE has a STATIC submode for showing static color which is writed in FS and CHASE submode. In CHASE submode, esp8266 plays packets from FS, which were stored there via RECORDING process.
+
+  RECORDING process:
+
+   - channel 510 - number of stored effect (should be 11-99)
+
+   - channel 511 - stop recording (255 - stop)
+
+   - channel 512 - start recording (250 - start recording without autodetection of effect loop, 251 - 255 start recording with autodetection) Autodetection of loop means that when 
+  esp8266 detects, that while recording it receives packet, similar as was in 20th frame from the begining, it automatically stops recording.
+  251 - delta for comparing packets is 1
+  252 - delta is 2
+  253 - delta is 3
+  254 - delta is 4
+  255 - delta is 5
+
+  FIXTURE MODE (DMX):
+
+  1 - Dimmer
+
+  2 - Shutter
+
+  3 - Red
+
+  4 - Green
+
+  5 - Blue
+
+  6 - Effect
+
+  7 - Speed
+
+  When Effect is bigger than 0, Red Green Blue and Shutter are inactive
