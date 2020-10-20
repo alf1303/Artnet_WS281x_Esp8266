@@ -9,9 +9,9 @@ settings_t settings = {
   chaseNum : 0, //number of internal chase
   dimmer : 255,
   //recordedEffNum : 0 //number of recorded effect
-  universe: UNIVERSE,
+  universe: UNI,
   address: UNI%21*24 + 1,
-  reverse: false
+  reverse: 0
 };
 settings_t temp_set;
 request_t request;
@@ -231,6 +231,12 @@ void setRemoteColor() {
     break;
   case 8:
     settings.mode = request.mode;
+    if(settings.mode == 0) {
+      settings.universe = UNI;
+    }
+    else if(settings.mode == 3) {
+      settings.universe = UNIVERSE;
+    }
     settings.autoMode = request.autoMode;
     settings.chaseNum = request.numEff;
     break;
@@ -243,7 +249,7 @@ void setRemoteColor() {
     settings.chaseNum = request.numEff;
     break;
   case 32:
-    settings.universe = request.universe;
+    //settings.universe = request.universe;
     settings.address = request.address;
     settings.reverse = request.reverse;
     saveSettingsToFs();
@@ -285,13 +291,12 @@ void formAnswerInfo(int port) {
   wifiUdp.write(temp_set.dimmer); //24
   wifiUdp.write(settings.dimmer); //25
   wifiUdp.write(settings.universe); //26
-  if(settings.address - 255 > 0) wifiUdp.write(255);
-  else wifiUdp.write(0);
-  wifiUdp.write(settings.address);
-  wifiUdp.write(settings.address); //27-28
-  wifiUdp.write(settings.reverse);
+  if(settings.address - 255 > 0) wifiUdp.write(255); //27
+  else wifiUdp.write(0); //27
+  wifiUdp.write(settings.address); //28
+  wifiUdp.write(settings.reverse); //29
   wifiUdp.endPacket();
-  printf("a: %d, u: %d\n", settings.address, settings.universe);
+  printf("a: %d, u: %d, r: %d\n", settings.address, settings.universe, settings.reverse);
 }
 
 void chasePlayer(uint8_t chaseNum, uint8_t speed, uint8_t dimmer) {

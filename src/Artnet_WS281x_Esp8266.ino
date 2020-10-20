@@ -189,9 +189,10 @@ void readWiFiUDP() {
          }
           #else 
             #ifndef NO_WS
-              long oldd = micros();
+              //long oldd = micros();
               recorder.writePacket(uniData, uniData[509], uniData[510], uniData[511]);
-              if (settings.mode == STATUS_WIFI) sendWS(); //*****************************************
+             if (settings.mode == STATUS_WIFI) sendWS(); //*****************************************
+             if (settings.mode == STATUS_FIXT) sendWS_addressed(); //*****************************************
               //printf("%d %d ms_wifi ** wsTime: %lu\n", mycounter, dur, micros() - oldd);
             #endif
          #endif
@@ -230,6 +231,7 @@ void processData() {
         setStaticColor(black);
         blackoutSetted = true;
       }
+      //sendWS();
       break;
     case 1:
       #ifdef LAN_MODE
@@ -244,7 +246,12 @@ void processData() {
       break;
     case 3:
       readWiFiUDP();
-      sendWS_addressed();
+      if (noSignalTime == 0) noSignalTime = millis();
+      if (((millis() - noSignalTime) > NO_SIG) && !blackoutSetted) {
+        setStaticColor(black);
+        blackoutSetted = true;
+      }
+      //sendWS_addressed();
       break;
     case 4:
       readWiFiUDP();
@@ -282,9 +289,11 @@ void sendWS() {
         RgbColor color(uniData[i * 3], uniData[i * 3 + 1], uniData[i * 3 + 2]);
         if(settings.reverse == 1) {
           strip.SetPixelColor(PixelCount - i - 1, color);
+          //printf("pixel: %d, R: %d, G: %d, B: %d\n", PixelCount - i - 1, color.R, color.G, color.B);
         }
         else {
           strip.SetPixelColor(i, color);
+          //printf("pixel: %d, R: %d, G: %d, B: %d\n", i, color.R, color.G, color.B);
         }
     } 
     //strip.Show(); 
