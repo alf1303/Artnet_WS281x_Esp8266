@@ -11,13 +11,17 @@ settings_t settings = {
   //recordedEffNum : 0 //number of recorded effect
   universe: UNI,
   address: UNI%21*24 + 1,
-  reverse: 0
+  reverse: 0,
+  pixelCount: 120,
+  startPixel: 0,
+  endPixel: 120,
+  segment: 15
 };
 settings_t temp_set;
 request_t request;
 fixture_t fixtureData;
 
- Recorder recorder = Recorder(PixelCount, &writingFlag);
+ Recorder recorder = Recorder(settings.pixelCount, &writingFlag);
 
 //NEOPIXEL Variables
 RgbColor red(colorSaturation, 0, 0);
@@ -30,7 +34,7 @@ RgbColor before_highlite;
 bool _highlite = false;
 HslColor chaseColor;  // for CHASE submode of AUTO mode
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, PixelPin);
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(settings.pixelCount, PixelPin);
 
 //UDP Settings
 uint8_t uniData[514]; 
@@ -39,6 +43,7 @@ uint16_t uniSize;
 uint8_t universe; 
 //uint8_t subnet = 0;
 uint8_t hData[ARTNET_HEADER + 1];
+uint8_t hData2[4];
 
 void initModes() {
   if(!LittleFS.exists(FILE_MODES)) {
@@ -71,6 +76,10 @@ void initModes() {
       f.write(addr_low);
       f.write(addr_high);
       f.write(settings.reverse);
+      f.write(settings.pixelCount);
+      f.write(settings.startPixel);
+      f.write(settings.endPixel);
+      f.write(settings.segment);
       delay(50);
       f.close();
     }
@@ -110,6 +119,10 @@ void saveSettingsToFs() {
     f.write(addr_low);
     f.write(addr_high);
     f.write(settings.reverse);
+    f.write(settings.pixelCount);
+    f.write(settings.startPixel);
+    f.write(settings.endPixel);
+    f.write(settings.segment);
     delay(50);
     f.close();
   }
@@ -118,8 +131,8 @@ void saveSettingsToFs() {
 
 void fillSettingsFromFs(settings_t* temp_set) {
   File f = LittleFS.open(FILE_MODES, "r");
-  uint8_t temp[12];
-  f.read(temp, 12);
+  uint8_t temp[16];
+  f.read(temp, 16);
   *temp_set = {
     mode : temp[0],
     autoMode : temp[1],
@@ -130,6 +143,10 @@ void fillSettingsFromFs(settings_t* temp_set) {
     universe : temp[8],
     address : temp[9] + temp[10],
     reverse: temp[11],
+    pixelCount: temp[12],
+    startPixel: temp[13],
+    endPixel: temp[14],
+    segment: temp[15]
   };
   f.close();
 }
@@ -140,8 +157,10 @@ void formatFS() {
 }
 
 void processRequest() {
-  printf("Command: %c, Option: %c, Mode: %d, Automode: %d\n", request.command, request.option, request.mode, request.autoMode);
-  printf("R: %d, G: %d, B: %d, D: %d, mask: %d\n", request.color.R, request.color.G, request.color.B, request.dimmer, request.mask);
+  printf("Receive: \n");
+  printf("  Command: %c, Option: %c, Mode: %d, Automode: %d\n", request.command, request.option, request.mode, request.autoMode);
+  printf("  R: %d, G: %d, B: %d, D: %d, mask: %d\n", request.color.R, request.color.G, request.color.B, request.dimmer, request.mask);
+  printf("  pCount: %d, startPix: %d, endPix: %d, reverse: %d, seg: %d\n", request.pixelCount, request.startPixel, request.endPixel, request.reverse, request.segment);
   Serial.println(request.sourceIP.toString());
   switch (request.command)
   {
@@ -252,6 +271,13 @@ void setRemoteColor() {
     //settings.universe = request.universe;
     settings.address = request.address;
     settings.reverse = request.reverse;
+    settings.segment = request.segment;
+    saveSettingsToFs();
+    break;
+  case 64:
+    settings.pixelCount = request.pixelCount;
+    settings.startPixel = request.startPixel;
+    settings.endPixel = request.endPixel;
     saveSettingsToFs();
     break;
   case 255:
@@ -295,8 +321,12 @@ void formAnswerInfo(int port) {
   else wifiUdp.write(0); //27
   wifiUdp.write(settings.address); //28
   wifiUdp.write(settings.reverse); //29
+  wifiUdp.write(settings.pixelCount); //30
+  wifiUdp.write(settings.startPixel); //31
+  wifiUdp.write(settings.endPixel); //32
+  wifiUdp.write(settings.segment); //33
   wifiUdp.endPacket();
-  printf("a: %d, u: %d, r: %d\n", settings.address, settings.universe, settings.reverse);
+  printf("Answer: a: %d, u: %d, r: %d, p: %d, st: %d, end: %d, seg: %d\n", settings.address, settings.universe, settings.reverse, settings.pixelCount, settings.startPixel, settings.endPixel, settings.segment);
 }
 
 void chasePlayer(uint8_t chaseNum, uint8_t speed, uint8_t dimmer) {
@@ -400,25 +430,25 @@ void test() {
   RgbColor redd = RgbColor(30, 0, 0);
   RgbColor grenn = RgbColor(0, 30, 0);
   RgbColor bluee = RgbColor(0, 0, 30);
-  for(int i = 0; i < PixelCount; i++) {
+  for(int i = 0; i < settings.pixelCount; i++) {
     strip.SetPixelColor(i, redd);
   }
   //strip.Show();
   showStrip();
   delay(500);
-  for(int i = 0; i < PixelCount; i++) {
+  for(int i = 0; i < settings.pixelCount; i++) {
     strip.SetPixelColor(i, grenn);
   }
   //strip.Show();
   showStrip();
   delay(500);
-  for(int i = 0; i < PixelCount; i++) {
+  for(int i = 0; i < settings.pixelCount; i++) {
     strip.SetPixelColor(i, bluee);
   }
   //strip.Show();
   showStrip();
   delay(100);
-    for(int i = 0; i < PixelCount; i++) {
+    for(int i = 0; i < settings.pixelCount; i++) {
     strip.SetPixelColor(i, black);
   }
   //strip.Show();
@@ -426,9 +456,23 @@ void test() {
   delay(500);
 }
 
+void test2() {
+  RgbColor blu = RgbColor(0, 0, 50);
+  for(int i = 0; i < 3; i++) {
+    strip.SetPixelColor(settings.startPixel, blu);
+    strip.SetPixelColor(settings.endPixel, blu);
+    showStrip();
+    delay(100);
+    strip.SetPixelColor(settings.startPixel, black);
+    strip.SetPixelColor(settings.endPixel, black);
+    showStrip();
+    delay(200);
+  }
+}
+
 void chaserColor(int speed) {
   chaseColor = HslColor (chaseHue, 1.0f, 0.4f);
-  for (int i = 0; i < PixelCount; i++) strip.SetPixelColor(i, chaseColor);
+  for (int i = 0; i < settings.pixelCount; i++) strip.SetPixelColor(i, chaseColor);
   //strip.Show();
     showStrip();
     chaseHue = chaseHue + 0.005f;
@@ -438,8 +482,13 @@ void chaserColor(int speed) {
   }
 
 void  setStaticColor(RgbColor color) {
-  for (int i = 0; i < PixelCount; i++) {
-    strip.SetPixelColor(i, color);
+  for (int i = 0; i < settings.pixelCount; i++) {
+    if(i < settings.startPixel || i > settings.endPixel) {
+      strip.SetPixelColor(i, black);
+    }
+    else {
+      strip.SetPixelColor(i, color);
+    }
      //strip.Show();
    }
    showStrip();

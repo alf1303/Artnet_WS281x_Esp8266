@@ -1,9 +1,9 @@
-1) Changing pixelCount from 120 to 144
+**1) Changing pixelCount from 120 to 144
 
-2) Changing segment count
+**2) Changing segment count
 
-3) Setting start and end number of working space (for cutting unnecessary leds)
+**3) Setting start and end number of working space (for cutting unnecessary leds)
 
-4) Change test mode to: first and last pixel should light up three times. This should be first and last pixel of working space
+**4) Change test mode to: first and last pixel should light up three times. This should be first and last pixel of working space
 
 5)

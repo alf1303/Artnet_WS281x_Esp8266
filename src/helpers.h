@@ -4,9 +4,9 @@
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
 #include "recorder.h"
-#define VERSION "v_0.7.2"
+#define VERSION "v_1.7.3"
 
-#define UNI 38 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 29 // change this for setting node universe and last byte of IP Address************************************
 #define UNIVERSE 19 //actual universe for receiving DMX
 
 //#define NO_WS
@@ -41,7 +41,10 @@ typedef struct {
     uint8_t universe;
     uint16_t address;
     uint8_t reverse;
-    //uint8_t segmentNum;
+    uint8_t pixelCount;
+    uint8_t startPixel;
+    uint8_t endPixel;
+    uint8_t segment;
 } settings_t;
 extern settings_t settings;
 extern settings_t temp_set;
@@ -64,6 +67,10 @@ typedef struct {
     uint8_t universe;
     uint16_t address;
     uint8_t reverse;
+    uint8_t pixelCount;
+    uint8_t startPixel;
+    uint8_t endPixel;
+    uint8_t segment;
 } request_t;
 extern request_t request;
 
@@ -95,12 +102,12 @@ extern uint16_t uniSize;
 extern uint8_t universe; 
 //uint8_t subnet = 0;
 extern uint8_t hData[ARTNET_HEADER + 1];
+extern uint8_t hData2[4];
 
 // Neopixel settings
 #define colorSaturation 200 //brightness for AUTO mode
-const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫХ ПИКСЕЛЕЙ В ЛЕНТЕ 
+//const uint16_t PixelCount = 120; // КОЛИЧЕСТВО ПОДКЛЮЧЕННЫХ ПИКСЕЛЕЙ В ЛЕНТЕ 
 const uint8_t PixelPin = 2;  // make sure to set this to the correct pin, ignored for Esp8266
-const int numberOfChannels = PixelCount * 3; // Total number of channels you want to receive (1 led = 3 channels)
 extern NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip;
 //NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart1800KbpsMethod> strip(PixelCount, PixelPin);
 extern HslColor chaseColor;  // for CHASE submode of AUTO mode
@@ -119,6 +126,7 @@ void chaserColor(int speed);
 void setStaticColor(RgbColor);
 void setStaticColorDimmed(uint8_t dimmer, RgbColor col);
 void test();
+void test2();
 void OTA_Func();
 void chasePlayer(uint8_t chaseNum, uint8_t speed, uint8_t dimmer); //for playing internal effects
 void effectPlayer(); //for playing effects from FS

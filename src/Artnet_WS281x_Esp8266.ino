@@ -46,8 +46,8 @@ void setup() {
   LittleFS.begin();
   //LittleFS.format();
   strip.Begin();
-  test();
   initModes();
+  test2();
   ConnectWifi(ssid1);
   Serial.println();
   printf("Version: %s\n", VERSION);
@@ -199,6 +199,7 @@ void readWiFiUDP() {
       }    
       else if (hData[0] == 'C' && hData[2] == UNI) {
         //printf("taddammmm\n");
+        wifiUdp.read(hData2, 4);
         request.command = hData[3];
         request.option = hData[4];
         request.sourceIP = wifiUdp.remoteIP();
@@ -214,7 +215,11 @@ void readWiFiUDP() {
           request.universe = hData[14];
           request.address = hData[15] + hData[16];
           request.reverse = hData[17];
-          printf("hdata15: %d, hdata16: %d, addr: %d, reverse: %d\n", hData[15], hData[16], hData[15] + hData[16], hData[17]);
+          request.pixelCount = hData2[0];
+          request.startPixel = hData2[1];
+          request.endPixel = hData2[2];
+          request.segment = hData2[3];
+          printf("SetSettings: hdata15: %d, hdata16: %d, addr: %d, reverse: %d, pC: %d, stP: %d, eP: %d, seg: %d\n", hData[15], hData[16], hData[15] + hData[16], hData[17], hData2[0], hData2[1], hData2[2], hData2[3]);
         }
         processRequest();
       }
@@ -284,11 +289,14 @@ void autoModeFunc() {
 }
 
 void sendWS() {
-      for (int i = 0; i < PixelCount; i++)
+      for (int i = 0; i < settings.pixelCount; i++)
     {
         RgbColor color(uniData[i * 3], uniData[i * 3 + 1], uniData[i * 3 + 2]);
+        if(i < settings.startPixel || i > settings.endPixel) {
+            color = black;
+          }
         if(settings.reverse == 1) {
-          strip.SetPixelColor(PixelCount - i - 1, color);
+          strip.SetPixelColor(settings.pixelCount - i - 1, color);
           //printf("pixel: %d, R: %d, G: %d, B: %d\n", PixelCount - i - 1, color.R, color.G, color.B);
         }
         else {
@@ -305,20 +313,23 @@ void sendWS_addressed() {
   int addr = settings.address - 1;
   RgbColor colorAddr(uniData[addr], uniData[addr + 1], uniData[addr + 2]);
   //printf("addr: %d, unidata[addr]: %d\n", addr, uniData[addr]);
-    for (int i = 0; i < PixelCount; i++)
+    for (int i = 0; i < settings.pixelCount; i++)
     {
         //printf("i: %d, addr: %d, color: %d %d %d\n", i, addr, colorAddr.R, colorAddr.G, colorAddr.B);
-      if(k == 16) {
+      if(k == settings.segment + 1) {
         addr = addr + 3;
         k = 1;
         //color.R = uniData[addr];
         //color.G = uniData[addr + 1];
         //color.B = uniData[addr + 2];
         colorAddr = RgbColor(uniData[addr], uniData[addr + 1], uniData[addr + 2]);
+        if(i < settings.startPixel || i > settings.endPixel) {
+            colorAddr = black;
+          }
       }
         
         if(settings.reverse == 1) {
-          strip.SetPixelColor(PixelCount - i - 1, colorAddr);
+          strip.SetPixelColor(settings.pixelCount - i - 1, colorAddr);
         }
         else {
           strip.SetPixelColor(i, colorAddr);
@@ -332,12 +343,15 @@ void sendWS_addressed() {
 void sendWSread(uint8_t* dataa, uint8_t dimmer) {
   uint8_t re, gr, bl;
   float koeff = dimmer*1.0/255;
-    for (int i = 0; i < PixelCount; i++)
+    for (int i = 0; i < settings.pixelCount; i++)
     {
       re = *dataa++;
       gr = *dataa++;
       bl = *dataa++;
         RgbColor color(re*koeff, gr*koeff, bl*koeff);
+        if(i < settings.startPixel || i > settings.endPixel) {
+            color = black;
+          }
         strip.SetPixelColor(i, color);
     } 
     //strip.Show(); 
