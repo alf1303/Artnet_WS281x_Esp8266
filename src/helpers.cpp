@@ -36,6 +36,14 @@ HslColor chaseColor;  // for CHASE submode of AUTO mode
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(settings.pixelCount, PixelPin);
 
+boolean isFading = false;
+uint8_t fred = 0;
+uint8_t fgreen = 0;
+uint8_t fblue = 0;
+uint8_t ffdim = 0;
+int fade_ms = 600;
+uint8_t fade_frame_dur = 30;
+
 //UDP Settings
 uint8_t uniData[514]; 
 uint16_t uniSize; 
@@ -278,7 +286,14 @@ void setRemoteColor() {
     settings.pixelCount = request.pixelCount;
     settings.startPixel = request.startPixel;
     settings.endPixel = request.endPixel;
-    saveSettingsToFs();
+    //saveSettingsToFs();
+    break;
+  case 128:
+    isFading = true;
+    fred = request.color.R;
+    fgreen = request.color.G;
+    fblue = request.color.B;
+    ffdim = request.dimmer;
     break;
   case 255:
     saveSettingsToFs();
@@ -499,6 +514,30 @@ void  setStaticColor(RgbColor color) {
    float koeff = dimmer*1.0/255;
    RgbColor tmp_color(col.R*koeff, col.G*koeff, col.B*koeff);
    setStaticColor(tmp_color);
+ }
+
+ void setStaticColorDimmedFaded() {
+   double temp_red = settings.readedRGB.R;
+   double temp_green = settings.readedRGB.G;
+   double temp_blue = settings.readedRGB.B;
+   double temp_dim = settings.dimmer;
+   double r_step = (fred - temp_red)/(fade_ms/fade_frame_dur);
+   double g_step = (fgreen - temp_green)/(fade_ms/fade_frame_dur);
+   double b_step = (fblue - temp_blue)/(fade_ms/fade_frame_dur);
+   double d_step = (ffdim - temp_dim)/(fade_ms/fade_frame_dur);
+   for(int i = 0; i < fade_ms/fade_frame_dur; i++) {
+     temp_dim = temp_dim + d_step;
+     temp_red = temp_red + r_step;
+     temp_green = temp_green + g_step;
+     temp_blue = temp_blue + b_step;
+     RgbColor tmp_color(temp_red, temp_green, temp_blue);
+     setStaticColorDimmed(temp_dim, tmp_color);
+     delay(fade_frame_dur);
+   }
+   settings.dimmer = ffdim;
+   settings.readedRGB = RgbColor(fred, fgreen, fblue);
+   isFading = false;
+   formAnswerInfo(ARTNET_PORT_OUT_UPD);
  }
 
  void fillFixtureData() {

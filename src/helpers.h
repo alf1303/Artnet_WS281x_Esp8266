@@ -95,6 +95,8 @@ extern fixture_t fixtureData;
 #define ARTNET_PORT_OUT_UPD 6457
 #define ARTNET_HEADER 17
 
+extern boolean isFading;
+
 //UDP Settings
 extern uint8_t uniData[514]; 
 extern uint16_t uniSize; 
@@ -125,6 +127,7 @@ char* convertAutoModes(int automod); //Converts digital values to String names f
 void chaserColor(int speed);
 void setStaticColor(RgbColor);
 void setStaticColorDimmed(uint8_t dimmer, RgbColor col);
+void setStaticColorDimmedFaded();
 void test();
 void test2();
 void OTA_Func();

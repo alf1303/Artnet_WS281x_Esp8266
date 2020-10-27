@@ -15,7 +15,7 @@
 //Ethernet Settings
 //const char* ssid; //SSID 
 const char* ssid1 = (char*)"udp";
-Ticker wifi_ticker;
+Ticker updateTicker;
 
 long newTime = 0; // holds time for calculating time interval between packets (for DROP_PACLETS mode)
 long noSignalTime = 0; // holds time for calculating cctime interval after last arrived packet (for NOSIGNAL blackout mode)
@@ -40,6 +40,10 @@ void setStatusLed(int val) {
 #endif
   }
 
+  void update() {
+    formAnswerInfo(ARTNET_PORT_OUT_UPD);
+  }
+
 void setup() {
   Serial.begin(115200);
   delay(10);
@@ -54,7 +58,7 @@ void setup() {
   pinMode(STATUS_LED, OUTPUT);
   OTA_Func();
   recorder.setFunc(sendStartRecording, sendStopRecording);
-  //wifi_ticker.attach(6, reconnectWiFi);
+  //updateTicker.attach(6, update);
 }
 
 void loop() { 
@@ -277,7 +281,11 @@ void autoModeFunc() {
       switch (settings.autoMode) {
         case 0:
           //setStaticColor(settings.readedRGB);
-          setStaticColorDimmed(settings.dimmer, settings.readedRGB);
+          if(isFading) {
+            setStaticColorDimmedFaded();
+          }
+          else 
+            setStaticColorDimmed(settings.dimmer, settings.readedRGB);
           break;
         case 1:
           chasePlayer(settings.chaseNum, settings.speed, settings.dimmer);
