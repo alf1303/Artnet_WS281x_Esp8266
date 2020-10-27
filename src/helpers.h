@@ -4,7 +4,7 @@
 #include <NeoPixelBus.h>
 #include <LittleFS.h>
 #include "recorder.h"
-#define VERSION "v_1.7.3"
+#define VERSION "v_1.7.4"
 
 #define UNI 29 // change this for setting node universe and last byte of IP Address************************************
 #define UNIVERSE 19 //actual universe for receiving DMX
