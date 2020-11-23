@@ -45,6 +45,22 @@ typedef struct {
     uint8_t startPixel;
     uint8_t endPixel;
     uint8_t segment;
+    ///////////////////////////////
+    uint8_t playlistSize;
+    bool playlistMode;
+    RgbColor fxColor;
+    uint8_t strobe;
+    uint8_t fxSize;
+    uint8_t fxParts;
+    uint8_t fxFade;
+    uint8_t fxParams;
+    uint8_t fxSpread;
+    uint8_t fxWidth;
+    boolean fxReverse;
+    boolean fxAttack;
+    boolean fxSymm;
+    boolean fxRnd;
+    boolean fxRndColor;
 } settings_t;
 extern settings_t settings;
 extern settings_t temp_set;
@@ -71,6 +87,21 @@ typedef struct {
     uint8_t startPixel;
     uint8_t endPixel;
     uint8_t segment;
+    uint8_t playlistSize;
+    bool playlistMode;
+    RgbColor fxColor;
+    uint8_t strobe;
+    uint8_t fxSize;
+    uint8_t fxParts;
+    uint8_t fxFade;
+    uint8_t fxParams;
+    uint8_t fxSpread;
+    uint8_t fxWidth;
+    boolean fxReverse;
+    boolean fxAttack;
+    boolean fxSymm;
+    boolean fxRnd;
+    boolean fxRndColor;
 } request_t;
 extern request_t request;
 

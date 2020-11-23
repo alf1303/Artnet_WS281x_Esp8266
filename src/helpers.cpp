@@ -15,7 +15,20 @@ settings_t settings = {
   pixelCount: 120,
   startPixel: 0,
   endPixel: 120,
-  segment: 15
+  segment: 15,
+  /////////////
+    playlistSize: 0,
+    playlistMode: false,
+    fxColor: blue,
+    strobe: 255,
+    fxSize: 100,
+    fxParts: 1,
+    fxFade: 0,
+    fxParams: 0,
+    fxSpread: 1,
+    fxWidth: 1,
+    fxReverse: false,
+    fxAttack: false,
 };
 settings_t temp_set;
 request_t request;
