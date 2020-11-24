@@ -51,6 +51,7 @@ void setup() {
   //LittleFS.format();
   strip.Begin();
   initModes();
+  FX.initFxData();////
   test2();
   ConnectWifi(ssid1);
   Serial.println();
@@ -150,13 +151,16 @@ void readWiFiUDP() {
     if (wifiUdp.parsePacket()){//&& wifiUdp.destinationIP() == ip) {
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
-        wifiUdp.read(hData, 18);
+        wifiUdp.read(hData, 5);
+        if(hData[0] == 'A') {
+          wifiUdp.read(hData1, 13);
+        }
         //printf("0 - %d, 1 - %d, 2 - %d", hData[0], hData[1], hData[2]);
      //if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
-       if ( hData[0] == 'A' && hData[14] == settings.universe) {
-         uniSize = (hData[16] << 8) + (hData[17]);
+       if ( hData[0] == 'A' && hData1[9] == settings.universe) {
+         uniSize = (hData1[11] << 8) + (hData1[12]);
          wifiUdp.read(uniData, uniSize);
-         universe = hData[14];
+         universe = hData1[9];
          int dur = getTimeDuration();
 
 #ifdef DEBUGMODE
@@ -203,27 +207,102 @@ void readWiFiUDP() {
       }    
       else if (hData[0] == 'C' && hData[2] == UNI) {
         //printf("taddammmm\n");
-        wifiUdp.read(hData2, 4);
         request.command = hData[3];
         request.option = hData[4];
         request.sourceIP = wifiUdp.remoteIP();
-        if(hData[3] == 'S' && hData[4] == 'S') {
-          request.mode = hData[5];
-          request.autoMode = hData[6];
-          request.numEff = hData[7];
-          request.speed = hData[8];
-          request.color = RgbColor(hData[9], hData[10], hData[11]);
-          request.dimmer = hData[12];
-          //request.save = hData[12];
-          request.mask = hData[13];
-          request.universe = hData[14];
-          request.address = hData[15] + hData[16];
-          request.reverse = hData[17];
-          request.pixelCount = hData2[0];
-          request.startPixel = hData2[1];
-          request.endPixel = hData2[2];
-          request.segment = hData2[3];
-          printf("SetSettings: hdata15: %d, hdata16: %d, addr: %d, reverse: %d, pC: %d, stP: %d, eP: %d, seg: %d\n", hData[15], hData[16], hData[15] + hData[16], hData[17], hData2[0], hData2[1], hData2[2], hData2[3]);
+        if(hData[3] == 'S') {
+          if(hData[4] == 'S') {
+            wifiUdp.read(hData1, 13);
+            wifiUdp.read(hData2, 17);
+            request.mode = hData1[0];
+            request.autoMode = hData1[1];
+            request.numEff = hData1[2];
+            request.fxSpeed = speedToDouble(hData1[3]);
+            request.color = RgbColor(hData1[4], hData1[5], hData1[6]);
+            request.dimmer = hData1[7];
+            //request.save = hData[12];
+            request.mask = hData1[8];
+            request.universe = hData1[9];
+            request.address = hData1[10] + hData1[11];
+            request.reverse = hData1[12];
+            request.pixelCount = hData2[0];
+            request.startPixel = hData2[1];
+            request.endPixel = hData2[2];
+            request.segment = hData2[3];
+            ///////////////////
+            request.fxColor = RgbColor(hData2[7], hData2[8], hData2[9]);
+            request.strobe = hData2[10];
+            request.fxSize = hData2[11];
+            request.fxParts = hData2[12];
+          if(request.fxParts != settings.fxParts) {
+            FX.needRecalculate = true;
+          }
+          request.fxFade = hData2[13];
+          request.fxParams = hData2[14];
+          settings.fxParams = request.fxParams;
+          request.fxSpread = hData2[15];
+          request.fxWidth = hData2[16];
+          printf("** udp read, recSize: %d, width: %d\n", request.fxSize, hData2[16]);
+          if(request.fxSpread != settings.fxSpread) {
+            FX.needRecalculate = true;
+          }
+          request.pixelCount = hData2[0] + (hData2[4]<<8);
+          request.startPixel = hData2[1] + (hData2[5]<<8);
+          request.endPixel = hData2[2] + (hData2[6]<<8);
+            //printf("SetSettings: hdata15: %d, hdata16: %d, addr: %d, reverse: %d, pC: %d, stP: %d, eP: %d, seg: %d\n", hData[15], hData[16], hData[15] + hData[16], hData[17], hData2[0], hData2[1], hData2[2], hData2[3]);
+          }
+          //if name settings
+        if(hData[4] == 'N') {
+          uint8_t nameSize = wifiUdp.read();
+          if(nameSize > 0) {
+            settings.name = new char[nameSize+1];
+            wifiUdp.read(settings.name, nameSize);
+            settings.name[nameSize] = '\0';
+            saveNameToFs(false);
+          }
+        }
+
+         //if playlist settings
+        if(hData[4] == 'L') {
+          printf("PL set receive\n");
+          uint8_t plSize = wifiUdp.read();
+          playlistPeriod = wifiUdp.read();
+          //delete playlist;
+          delay(10);
+          playlist = new ledsettings_t[plSize];
+          playlist_temp = playlist;
+          printf("plSize: %d, plPeriod: %d\n", plSize, playlistPeriod);
+          for(int i = 0; i < plSize; i++) {
+            ledsettings_t set;
+            set.dimmer = wifiUdp.read();
+            set.color.R = wifiUdp.read();
+            set.color.G = wifiUdp.read();
+            set.color.B = wifiUdp.read();
+            set.fxColor.R = wifiUdp.read();
+            set.fxColor.G = wifiUdp.read();
+            set.fxColor.B = wifiUdp.read();
+            set.strobe = wifiUdp.read();
+            set.fxNumber = wifiUdp.read();
+            set.fxSpeed = speedToDouble(wifiUdp.read());
+            set.fxSize = wifiUdp.read();
+            set.fxParts = wifiUdp.read();
+            set.fxFade = wifiUdp.read();
+            set.fxParams = wifiUdp.read();
+            set.fxSpread = wifiUdp.read();
+            set.fxWidth = wifiUdp.read();
+            set.fxReverse = (set.fxParams)&1;
+            set.fxAttack = (set.fxParams>>1)&1;
+            set.fxSymm = (set.fxParams>>2)&1;
+            set.fxRnd = (set.fxParams>>3)&1;
+            set.fxRndColor = (set.fxParams>>7)&1;
+            *playlist = set;
+            playlist++;
+          }
+          playlist = playlist_temp;
+          settings.playlistSize = plSize;
+          savePlaylist();
+        }
+          
         }
         processRequest();
       }
@@ -280,20 +359,134 @@ void processData() {
 void autoModeFunc() {
       switch (settings.autoMode) {
         case 0:
-          //setStaticColor(settings.readedRGB);
-          if(isFading) {
-            setStaticColorDimmedFaded();
-          }
-          else 
-            setStaticColorDimmed(settings.dimmer, settings.readedRGB);
+          processFx();////
+          outToStrip();
+          processPlaylist(); ////
           break;
         case 1:
-          chasePlayer(settings.chaseNum, settings.speed, settings.dimmer);
+          chasePlayer(settings.fxNumber, settings.fxSpeed, settings.dimmer);
           break;
         case 3:
           effectPlayer();
           break;
       }
+}
+
+void stopFX() {
+  if(fxTicker.active()) fxTicker.detach();
+        if(fxFadeTicker.active()) fxFadeTicker.detach();
+        FX.clearFxData();
+        FX.fxRunning = false;
+        FX.needRecalculate = true;
+        FX.rndShouldGo = -1;
+        FX.prevIndex = -1;
+        FX.lastPixel = 0;
+        delay(40);
+}
+
+void processFx() {
+  switch(settings.fxNumber) {
+    case 0: //Stopped FX
+      if(FX.fxRunning) {
+        stopFX();
+        FX.fxRunning = false;
+        FX.needRecalculate = true;
+        if(FX.previousFxNum != 0) FX.previousFxNum = 0;
+        //printf("Stopped FX...\n");
+      }
+      break;
+    case 1: //Sinus FX
+      if(!fxTicker.active()) {
+        stopFX();
+        fxTicker.attach_ms(1000/FX.fps, sinus);
+        FX.fxRunning = true;
+        FX.previousFxNum = 1;
+      }
+      if(fxTicker.active() && FX.previousFxNum != 1) {
+        stopFX();
+        fxTicker.attach_ms(1000/FX.fps, sinus);
+        FX.previousFxNum = 1;
+        FX.fxRunning = true;
+      }
+      break;
+    case 2: //Cyclon FX
+      if(FX.previousFxNum != 2) {
+        stopFX();
+        setupAnimations();
+        FX.fxRunning = true;
+        FX.previousFxNum = 2;
+      }
+      if(FX.speedChanged) {
+        FX.animations.ChangeAnimationDuration(1, (uint16_t)((SPEED_MAX_DOUBLE - settings.fxSpeed)*1000 + 5));
+        FX.speedChanged = false;
+      }
+      FX.animations.UpdateAnimations();
+      break;
+    case 3: //Fade FX
+      if(FX.previousFxNum != 3) {
+        //printf("R: %d, G:%d, B:%d, fxSize: %d, fxParts: %d, fxSpread: %d, fxSpeed: %f\n", settings.fxColor.R, settings.fxColor.G, settings.fxColor.B, settings.fxSize, settings.fxParts, settings.fxSpread, settings.fxSpeed);
+        stopFX();
+        setupAnimationsCyclon();
+        FX.fxRunning = true;
+        FX.previousFxNum = 3;
+      }
+      if(FX.speedChanged) {
+        FX.animations2.ChangeAnimationDuration(1, (uint16_t)((SPEED_MAX_DOUBLE - settings.fxSpeed)*1000 + 5));
+        FX.speedChanged = false;
+      }
+      FX.animations2.UpdateAnimations();
+      break;
+    case 4: //RGB FX
+      if(!fxTicker.active()) {
+        stopFX();
+        fxTicker.attach_ms(1000/FX.fps, sinusRGB);
+        FX.fxRunning = true;
+        FX.previousFxNum = 4;
+      }
+      if(fxTicker.active() && FX.previousFxNum != 4) {
+        stopFX();
+        fxTicker.attach_ms(1000/FX.fps, sinus);
+        FX.previousFxNum = 4;
+        FX.fxRunning = true;
+      }
+      break;
+    
+    default:
+      //printf("***Wrong fxNumber\n");
+      break;
+  }
+}
+
+void processPlaylist() {
+  if(settings.playlistMode && settings.playlistSize > 0) {
+    //printf("plmode: %d, plSize: %d\n", settings.playlistMode, settings.playlistSize);
+    if((millis() - playlistLastTime) > playlistPeriodMs) {
+      if(playlist_counter >= settings.playlistSize){
+          while(playlist_counter > 0) {
+            playlist_temp--;
+            playlist_counter--;
+          }
+          //printf("playlistCounter: %d\n", playlist_counter);
+         // printf("%p, %p\n", playlist_temp, playlist);
+        }
+        else {
+          copyPlaylistSettings(settings, *playlist_temp);
+          //printf("cur item: %p\n", playlist_temp);
+          playlistLastTime = millis();
+          playlist_counter++;
+          playlist_temp++;
+        }
+    }
+  }
+}
+
+void outToStrip() {
+    if(!isFading) {
+      setStaticColorDimmed(settings.dimmer, settings.color);
+    }
+    else {
+      setStaticColorDimmedFaded();
+    }
 }
 
 void sendWS() {
