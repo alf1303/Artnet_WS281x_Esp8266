@@ -15,7 +15,7 @@
 //Ethernet Settings
 //const char* ssid; //SSID 
 const char* ssid1 = (char*)"udp";
-Ticker updateTicker;
+Ticker updateSendTicker;
 
 long newTime = 0; // holds time for calculating time interval between packets (for DROP_PACLETS mode)
 long noSignalTime = 0; // holds time for calculating cctime interval after last arrived packet (for NOSIGNAL blackout mode)
@@ -33,15 +33,15 @@ IPAddress gateway(192, 168, 0, 101); //IP ADDRESS РОУТЕРА
 IPAddress subnet_ip(255, 255, 255, 0); //SUBNET_IP
 const char* password = "esp18650"; //PASSW 
 
+void update() {//for sending updated status to Application
+  formAnswerInfo(ARTNET_PORT_OUT_UPD);
+}
+
 void setStatusLed(int val) { 
   digitalWrite(STATUS_LED, !val); 
 #ifdef ADV_DEBUG
   printf("**** set STATUS_LED: %d\n", val);
 #endif
-  }
-
-  void update() {
-    formAnswerInfo(ARTNET_PORT_OUT_UPD);
   }
 
 void setup() {
@@ -59,7 +59,6 @@ void setup() {
   pinMode(STATUS_LED, OUTPUT);
   OTA_Func();
   recorder.setFunc(sendStartRecording, sendStopRecording);
-  //updateTicker.attach(6, update);
 }
 
 void loop() { 
@@ -266,8 +265,9 @@ void readWiFiUDP() {
         if(hData[4] == 'L') {
           printf("PL set receive\n");
           uint8_t plSize = wifiUdp.read();
-          playlistPeriod = wifiUdp.read();
-          //delete playlist;
+          uint8_t low = wifiUdp.read();
+          uint8_t high = wifiUdp.read();
+          playlistPeriod = low + (high<<8);
           delay(10);
           playlist = new ledsettings_t[plSize];
           playlist_temp = playlist;
@@ -309,10 +309,23 @@ void readWiFiUDP() {
     }
 }
 
+void stopUpdate() {
+  if(updateSendTicker.active()) {
+        updateSendTicker.detach();
+      }
+}
+
+void startUpdate() {
+  if(!updateSendTicker.active()) {
+    updateSendTicker.attach(2, update);
+  }
+}
+
 //Choosing which readUPD function to use
 void processData() {
   switch (settings.mode) {
     case 0:
+      stopUpdate();
       readWiFiUDP();
       if (noSignalTime == 0) noSignalTime = millis();
       if (((millis() - noSignalTime) > NO_SIG) && !blackoutSetted) {
@@ -322,6 +335,7 @@ void processData() {
       //sendWS();
       break;
     case 1:
+      stopUpdate();
       #ifdef LAN_MODE
         readEthernetUDP();
       #endif
@@ -329,10 +343,12 @@ void processData() {
       if ((millis() - noSignalTime) > NO_SIG) setStaticColor(black);
       break;
     case 2:
+      startUpdate();
       autoModeFunc();
       readWiFiUDP();
       break;
     case 3:
+      stopUpdate();
       readWiFiUDP();
       if (noSignalTime == 0) noSignalTime = millis();
       if (((millis() - noSignalTime) > NO_SIG) && !blackoutSetted) {
@@ -342,6 +358,7 @@ void processData() {
       //sendWS_addressed();
       break;
     case 4:
+    stopUpdate();
       readWiFiUDP();
       if(uniData[5] != fixtureData.effect) recorder.tryStopReading();
       fillFixtureData();
@@ -417,7 +434,7 @@ void processFx() {
         FX.previousFxNum = 2;
       }
       if(FX.speedChanged) {
-        FX.animations.ChangeAnimationDuration(1, (uint16_t)((SPEED_MAX_DOUBLE - settings.fxSpeed)*1000 + 5));
+        FX.animations.ChangeAnimationDuration(1, (uint16_t)((SPEED_MAX_DOUBLE - settings.fxSpeed)*2000 + 30));
         FX.speedChanged = false;
       }
       FX.animations.UpdateAnimations();
@@ -431,7 +448,7 @@ void processFx() {
         FX.previousFxNum = 3;
       }
       if(FX.speedChanged) {
-        FX.animations2.ChangeAnimationDuration(1, (uint16_t)((SPEED_MAX_DOUBLE - settings.fxSpeed)*1000 + 5));
+        FX.animations2.ChangeAnimationDuration(1, (uint16_t)((SPEED_MAX_DOUBLE - settings.fxSpeed)*2000 + 30));
         FX.speedChanged = false;
       }
       FX.animations2.UpdateAnimations();
@@ -455,6 +472,11 @@ void processFx() {
       //printf("***Wrong fxNumber\n");
       break;
   }
+}
+
+void resetPlaylist() {
+      playlist_counter = 0;
+      playlist_temp = playlist;
 }
 
 void processPlaylist() {

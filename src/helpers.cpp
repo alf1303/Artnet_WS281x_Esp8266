@@ -128,6 +128,8 @@ void saveSettingsToFs() {
     f.write(settings.fxParams); //23
     f.write(settings.fxSpread); //24
     f.write(settings.fxWidth); //25
+    f.write(playlistPeriod); //26
+    f.write(playlistPeriod>>8); //27
     delay(50);
     f.close();
   }
@@ -136,8 +138,8 @@ void saveSettingsToFs() {
 
 void loadSettingsFromFs() {
   File f = LittleFS.open(FILE_MODES, "r");
-  uint8_t temp[26];
-  f.read(temp, 26);
+  uint8_t temp[28];
+  f.read(temp, 28);
   f.close();
   settings.mode = temp[0];
   settings.autoMode = temp[1];
@@ -160,6 +162,7 @@ void loadSettingsFromFs() {
   settings.fxParams = temp[23];
   settings.fxSpread = temp[24];
   settings.fxWidth = temp[25];
+  playlistPeriod = temp[26] + (temp[27]<<8);
   loadPlaylist();
 }
 
@@ -305,7 +308,7 @@ void setRemoteColor() {
       settings.universe = UNIVERSE;
     }
     settings.autoMode = request.autoMode;
-    settings.fxNumber = request.numEff;
+    //settings.fxNumber = request.numEff;
     break;
   case 15:
     settings.dimmer = request.dimmer;
@@ -313,7 +316,7 @@ void setRemoteColor() {
     settings.fxSpeed = request.fxSpeed;
     settings.mode = request.mode;
     settings.autoMode = request.autoMode;
-    settings.fxNumber = request.numEff;
+    //settings.fxNumber = request.numEff;
     break;
   case 32:
     //settings.universe = request.universe;
@@ -391,7 +394,9 @@ void setRemoteColor() {
   case 131: 
     settings.fxParams = request.fxParams;
     settings.playlistMode = (request.fxParams>>6)&1;
-    printf("playlist mode: %d\n", settings.playlistMode);
+     if(!settings.playlistMode) {
+      resetPlaylist();
+    }
     break;
   case 255:
     saveSettingsToFs();
@@ -407,8 +412,12 @@ void setDmxAddress() {
 
 }
 
+void printIpAddress(char* msg, IPAddress addr){
+  printf("%s %d.%d.%d.%d\n", msg, addr[0], addr[1], addr[2], addr[3]);
+}
+
 void formAnswerInfo(int port) {
-  fillSettingsFromFs(&temp_set);
+  printIpAddress((char*)"requestIP: ", request.sourceIP);
   wifiUdp.beginPacket(request.sourceIP, port);
   wifiUdp.write("CP"); //0-1
   wifiUdp.write(UNI);
