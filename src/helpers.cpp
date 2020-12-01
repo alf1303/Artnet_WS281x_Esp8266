@@ -603,11 +603,11 @@ void test2() {
   RgbColor blu = RgbColor(0, 0, 50);
   for(int i = 0; i < 3; i++) {
     strip.SetPixelColor(settings.startPixel, blu);
-    strip.SetPixelColor(settings.endPixel, blu);
+    strip.SetPixelColor(settings.endPixel-1, blu);
     showStrip();
     delay(100);
     strip.SetPixelColor(settings.startPixel, black);
-    strip.SetPixelColor(settings.endPixel, black);
+    strip.SetPixelColor(settings.endPixel-1, black);
     showStrip();
     delay(200);
   }
