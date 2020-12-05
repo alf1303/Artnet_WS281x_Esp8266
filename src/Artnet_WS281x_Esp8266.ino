@@ -160,7 +160,7 @@ void readWiFiUDP() {
          uniSize = (hData1[11] << 8) + (hData1[12]);
          wifiUdp.read(uniData, uniSize);
          universe = hData1[9];
-         int dur = getTimeDuration();
+         //int dur = getTimeDuration();
 
 #ifdef DEBUGMODE
          if(sizeof(uniData) == 514) { //*******************************************
@@ -438,7 +438,7 @@ void processFx() {
         FX.previousFxNum = 2;
       }
       if(FX.speedChanged) {
-        FX.animations.ChangeAnimationDuration(1, (uint16_t)((SPEED_MAX_DOUBLE - settings.fxSpeed)*2000 + 30));
+        FX.animations.ChangeAnimationDuration(1, (uint16_t)((7 - speedNormal(settings.fxSpeed, 0.15, 7))*2000 + 20));
         FX.speedChanged = false;
       }
       FX.animations.UpdateAnimations();
@@ -452,7 +452,7 @@ void processFx() {
         FX.previousFxNum = 3;
       }
       if(FX.speedChanged) {
-        FX.animations2.ChangeAnimationDuration(1, (uint16_t)((SPEED_MAX_DOUBLE - settings.fxSpeed)*2000 + 30));
+        FX.animations2.ChangeAnimationDuration(1, (uint16_t)((5 - speedNormal(settings.fxSpeed, 0.13, 5.0))*2000 + 20));
         FX.speedChanged = false;
       }
       FX.animations2.UpdateAnimations();

@@ -7,7 +7,7 @@
 #include <fxController.h>
 #include "recorder.h"
 
-#define VERSION "v_1.7.5"
+#define VERSION "v_1.7.6"
 
 #define FILE_MODES "/modes"
 #define NAME_FILE "/namefile"
@@ -16,7 +16,7 @@
 //#define PASS_FILE "/passfile"
 #define PLAYLIST_FILE "/playlist"
 
-#define UNI 21 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 29 // change this for setting node universe and last byte of IP Address************************************
 #define UNIVERSE 19 //actual universe for receiving DMX
 
 //#define NO_WS
@@ -184,6 +184,7 @@ void saveNameToFs(bool first);
 
 double speedToDouble(uint8_t speed);
 uint8_t speedToInt(double speed);
+double speedNormal(double speed, double min, double max);
 
 void processFx();
 void setupAnimations();

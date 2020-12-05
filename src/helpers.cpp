@@ -719,6 +719,22 @@ void  setStaticColor(RgbColor color) {
    fixtureData.speed = uniData[6];
  }
 
+//min represents maximum speed, max - minimum speed
+double speedNormal(double speed, double min, double max) {
+  double result;
+  double scale = (1.0*(max - min))/(SPEED_MAX_DOUBLE - SPEED_MIN_DOUBLE);
+  if((SPEED_MIN_DOUBLE == 0 && min == 0) || (SPEED_MIN_DOUBLE != 0 && min != 0)) {
+    result = speed*scale;
+  }
+  else if(SPEED_MIN_DOUBLE == 0) {
+    result = speed*scale + min;
+  }
+  else if(min == 0) {
+    result = speed*scale + max;
+  }
+  return result;
+}
+
  uint8_t speedToInt(double speed) {
   double result;
   double scale = (1.0*(SPEED_MAX_INT - SPEED_MIN_INT))/(SPEED_MAX_DOUBLE - SPEED_MIN_DOUBLE);
