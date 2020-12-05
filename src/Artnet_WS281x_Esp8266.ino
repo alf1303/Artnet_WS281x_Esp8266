@@ -206,9 +206,13 @@ void readWiFiUDP() {
       }    
       else if (hData[0] == 'C' && hData[2] == UNI) {
         //printf("taddammmm\n");
+        if(!compareIpAddresses(sourceIP, wifiUdp.remoteIP())) {
+          sourceIP = wifiUdp.remoteIP();
+          saveIpToFs();
+        }
         request.command = hData[3];
         request.option = hData[4];
-        request.sourceIP = wifiUdp.remoteIP();
+        //request.sourceIP = wifiUdp.remoteIP();
         if(hData[3] == 'S') {
           if(hData[4] == 'S') {
             wifiUdp.read(hData1, 13);

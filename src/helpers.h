@@ -11,6 +11,7 @@
 
 #define FILE_MODES "/modes"
 #define NAME_FILE "/namefile"
+#define IP_FILE "/ipfile"
 //#define SSID_FILE "/ssidfile"
 //#define PASS_FILE "/passfile"
 #define PLAYLIST_FILE "/playlist"
@@ -48,6 +49,7 @@ extern uint8_t writingFlag;
 extern FxController FX;
 extern Ticker fxTicker;
 extern Ticker fxFadeTicker;
+extern IPAddress sourceIP;
 
 typedef struct {
     char command;
@@ -164,6 +166,8 @@ void setHighliteMode();
 void unsetHighliteMode();
 void fillSettingsFromFs(settings_t* set);
 void saveSettingsToFs();
+void saveIpToFs();
+void loadIpFromFs();
 void showStrip();
 void setReset();
 void setRemoteColor();
@@ -172,6 +176,7 @@ void sendWS_addressed();
 void sendStartRecording();
 void sendStopRecording();
 void fillFixtureData();
+bool compareIpAddresses(IPAddress a, IPAddress b);
 
 void loadSettingsFromFs();
 

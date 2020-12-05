@@ -50,6 +50,8 @@ HslColor chaseColor;  // for CHASE submode of AUTO mode
 float chaseHue = 0.0f; // for CHASE submode of AUTO mode
 NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(settings.pixelCount, PixelPin);
 
+IPAddress sourceIP;
+
 boolean isFading = false;
 uint8_t fred = 0;
 uint8_t fgreen = 0;
@@ -76,6 +78,10 @@ void initModes() {
   if(!LittleFS.exists(NAME_FILE)) {
     printf("***namefile not exists, creating...\n");
     saveNameToFs(true);
+  }
+  if(!LittleFS.exists(IP_FILE)) {
+    printf("***namefile not exists, creating...\n");
+    saveIpToFs();
   }
 
     printf("Reading values from mode_file\n");
@@ -136,7 +142,32 @@ void saveSettingsToFs() {
   printf("Saved Settings\n");
 }
 
+void saveIpToFs() {
+  File ipfile = LittleFS.open(IP_FILE, "w");
+    if(!ipfile) {
+    printf("**** Open ipfile for writing fails\n");
+  }
+  else{
+    for(int i = 0; i < 4; i++) {
+      ipfile.write(sourceIP[i]);
+    }
+    delay(50);
+    ipfile.close();
+  }
+}
+
+void loadIpFromFs() {
+  File f = LittleFS.open(IP_FILE, "r");
+  uint8_t temp[4];
+  f.read(temp, 4);
+  f.close();
+  for(int i = 0; i < 4; i++) {
+    sourceIP[i] = temp[i];
+  }
+}
+
 void loadSettingsFromFs() {
+  loadIpFromFs();
   File f = LittleFS.open(FILE_MODES, "r");
   uint8_t temp[28];
   f.read(temp, 28);
@@ -344,8 +375,12 @@ void setRemoteColor() {
     settings.fxParts = request.fxParts;
     settings.fxParams = request.fxParams;
     settings.fxSize = request.fxSize;
+    if(settings.fxSpeed != request.fxSpeed) {
+      FX.speedChanged = true;
+    }
     settings.fxSpeed = request.fxSpeed;
     settings.fxSpread = request.fxSpread;
+    settings.fxWidth = request.fxWidth;
     if(settings.fxReverse != (request.fxParams&1)) {
       FX.needRecalculate = true;
     }
@@ -417,8 +452,8 @@ void printIpAddress(char* msg, IPAddress addr){
 }
 
 void formAnswerInfo(int port) {
-  printIpAddress((char*)"requestIP: ", request.sourceIP);
-  wifiUdp.beginPacket(request.sourceIP, port);
+  printIpAddress((char*)"requestIP: ", sourceIP);
+  wifiUdp.beginPacket(sourceIP, port);
   wifiUdp.write("CP"); //0-1
   wifiUdp.write(UNI);
   wifiUdp.write(VERSION);
@@ -710,6 +745,14 @@ double speedToDouble(uint8_t speed) {
   }
   else if(SPEED_MIN_DOUBLE == 0) {
     result = speed*scale + SPEED_MAX_DOUBLE;
+  }
+  return result;
+}
+
+bool compareIpAddresses(IPAddress a, IPAddress b) {
+  bool result = true;
+  for(int i = 0; i < 4; i++) {
+    if(a[i] != b[i]) return false;
   }
   return result;
 }
