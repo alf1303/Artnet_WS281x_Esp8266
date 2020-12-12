@@ -1,5 +1,11 @@
 #include "helpers.h"
 
+bool noWs = false;
+bool noArtNet = false;
+bool noAll = false;
+uint8_t debugValue = 0;
+
+
 WiFiUDP wifiUdp;
 settings_t settings = {
   mode : 0, // WIFI or LAN or AUTO mode variable (0 - WIFI, 1 - LAN, 2 - AUTO, 3 - FIXTURE MODE)
@@ -291,6 +297,27 @@ void processSetCommand() {
     break;
   case 'C':
   /*****/
+    break;
+  case 'a': //nows
+    if(debugValue == 255) {
+      noWs = true;
+    }
+    else {
+      noWs = false;
+    }
+    break;
+  case 'b': //noartnet
+    if(debugValue == 255) {
+      noArtNet = true;
+    }
+    else {
+      noArtNet = false;
+    }
+    break;
+  case 'c': //setpower
+     if(debugValue >= 0 && debugValue <= 20) {
+       WiFi.setOutputPower(debugValue*1.0f);
+     } //16.4 20max
     break;
   default:
     printf("**** Unknown set option\n");

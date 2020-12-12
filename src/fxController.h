@@ -12,6 +12,7 @@ class FxController{
     RgbTemp_t *fxTemp;////
     RgbTemp_t *attackTemp;////
     bool fxRunning;
+    bool fxCleared;
     bool periodChanged;
     bool speedChanged;
     bool needRecalculate;
@@ -25,6 +26,7 @@ class FxController{
 
     FxController() {
         fxRunning = false;
+        fxCleared = false;
         periodChanged = false;
         speedChanged = false;
         needRecalculate = true;

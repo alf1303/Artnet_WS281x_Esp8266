@@ -7,7 +7,7 @@
 #include <fxController.h>
 #include "recorder.h"
 
-#define VERSION "v_1.7.6"
+#define VERSION "v_1.7.7"
 
 
 #define FILE_MODES "/modes"
@@ -17,7 +17,7 @@
 //#define PASS_FILE "/passfile"
 #define PLAYLIST_FILE "/playlist"
 
-#define UNI 29 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 21 // change this for setting node universe and last byte of IP Address************************************
 #define UNIVERSE 19 //actual universe for receiving DMX
 
 //#define NO_WS
@@ -39,6 +39,12 @@
 #define AUTO_CHASE 1
 #define AUTO_RECORDED 2
 #define STATUS_LED 2 // Led indicator (2 - built-in for NodeMCU)
+
+extern bool noWs;
+extern bool noArtNet;
+extern bool noAll;
+extern uint8_t debugValue;
+
 extern WiFiUDP wifiUdp;
 
 extern settings_t settings;

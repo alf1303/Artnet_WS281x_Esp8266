@@ -151,12 +151,12 @@ void readWiFiUDP() {
       noSignalTime = millis(); //this will be compared with current time in processData function
       blackoutSetted = false; // allow blackout when no signal for a some time
         wifiUdp.read(hData, 5);
-        if(hData[0] == 'A') {
+        if(!noArtNet && hData[0] == 'A') {
           wifiUdp.read(hData1, 13);
         }
         //printf("0 - %d, 1 - %d, 2 - %d", hData[0], hData[1], hData[2]);
      //if ( hData[0] == 'A' && hData[4] == 'N' && startUniverse == hData[14]) {
-       if ( hData[0] == 'A' && hData1[9] == settings.universe) {
+       if (!noArtNet && hData[0] == 'A' && hData1[9] == settings.universe) {
          uniSize = (hData1[11] << 8) + (hData1[12]);
          wifiUdp.read(uniData, uniSize);
          universe = hData1[9];
@@ -198,8 +198,12 @@ void readWiFiUDP() {
             #ifndef NO_WS
               //long oldd = micros();
               recorder.writePacket(uniData, uniData[509], uniData[510], uniData[511]);
-             if (settings.mode == STATUS_WIFI) sendWS(); //*****************************************
-             if (settings.mode == STATUS_FIXT) sendWS_addressed(); //*****************************************
+
+              if(!noWs) {
+                if (settings.mode == STATUS_WIFI) sendWS(); //*****************************************
+                if (settings.mode == STATUS_FIXT) sendWS_addressed(); //*****************************************
+              }
+
               //printf("%d %d ms_wifi ** wsTime: %lu\n", mycounter, dur, micros() - oldd);
             #endif
          #endif
@@ -306,6 +310,10 @@ void readWiFiUDP() {
           settings.playlistSize = plSize;
           savePlaylist();
         }
+
+        if(hData[4] == 'a' || hData[4] == 'b' || hData[4] == 'c') {
+          debugValue = wifiUdp.read();
+        }
           
         }
         processRequest();
@@ -317,11 +325,19 @@ void stopUpdate() {
   if(updateSendTicker.active()) {
         updateSendTicker.detach();
       }
+  if(!FX.fxCleared) {
+    FX.clearFxData();
+    FX.fxCleared = true;
+  }
+
 }
 
 void startUpdate() {
   if(!updateSendTicker.active()) {
     updateSendTicker.attach(2, update);
+  }
+  if(FX.fxCleared) {
+    FX.fxCleared = false;
   }
 }
 
@@ -373,6 +389,10 @@ void processData() {
       else{
         chasePlayer(fixtureData.effect, fixtureData.speed, fixtureData.dimmer);
       }
+      break;
+      //NoALL
+    case 11:
+      readWiFiUDP();
       break;
   }
 }
