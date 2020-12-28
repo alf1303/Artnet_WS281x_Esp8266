@@ -350,6 +350,10 @@ void setRemoteColor() {
   case 1:
     settings.dimmer = request.dimmer;
     break;
+  case 3: //grandmaster
+    settings.dimmer = request.dimmer;
+    settings.fxSize = request.fxSize;
+    break;
   case 2:
     settings.color = request.color;
     break;

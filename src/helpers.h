@@ -7,7 +7,7 @@
 #include <fxController.h>
 #include "recorder.h"
 
-#define VERSION "v_1.7.7"
+#define VERSION "v_1.7.8"
 
 
 #define FILE_MODES "/modes"
