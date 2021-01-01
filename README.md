@@ -1,5 +1,10 @@
 # Artnet_WS281x_Esp8266
  Controls WS2812/13 via Artnet using esp8266
+ 
+
+Compatible with Android application (for using without artnet): https://play.google.com/store/apps/details?id=alfarom.apps.ledcontroller
+
+NOTE: After using mobile application esp8266 will no longer react on ARTNET data (TODO: add possibility of changing modes in application). For reverting to Artnet mode need to format LitteFS or change mode with help of service application
 
  Change #define UNI 33 for assigning destination artnet universe and IP Address
 
@@ -14,11 +19,11 @@ WIFI SSID: udp
 
 WIFI PASSWORD: esp18650
 
-Router IP Address: 2.0.0.101
+Router IP Address: 192.168.0.101
 
-Nodes IP Address range: 2.0.0.21 - 2.0.0.63
+Nodes IP Address range: 192.168.0.21 - 192.168.0.63
 
-Nodes works in unicast mode ONLY
+Nodes works better in broadcast mode
 
 For MagicQ use CONTINUOUS mode (33fps) or Reduced (15fps) or Mixed+Changes
 
@@ -31,6 +36,13 @@ WORKING MODES:
  - #LAN not active  now
 
  - AUTOMODE
+ 
+ - FIXTURE
+
+Compatible with Android application: https://play.google.com/store/apps/details?id=alfarom.apps.ledcontroller
+
+
+////////////////OLD, but present in firmware. Also there is new mode for joining leds in segments for occupying smaller amount of DMX channels (size of segments can be set via service mobile application or firmware)
 
 AUTOMODE has a STATIC submode for showing static color which is writed in FS and CHASE submode. In CHASE submode, esp8266 plays packets from FS, which were stored there via RECORDING process.
 
