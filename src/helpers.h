@@ -17,8 +17,9 @@
 //#define PASS_FILE "/passfile"
 #define PLAYLIST_FILE "/playlist"
 
-#define UNI 37 // change this for setting node universe and last byte of IP Address************************************
+#define UNI 35 // change this for setting node universe and last byte of IP Address************************************
 #define UNIVERSE 19 //actual universe for receiving DMX
+#define INT_LIMIT 0.8
 
 //#define NO_WS
 //#define NO_ARTNET

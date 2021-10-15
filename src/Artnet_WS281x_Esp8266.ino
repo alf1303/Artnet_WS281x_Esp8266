@@ -538,7 +538,7 @@ void outToStrip() {
 void sendWS() {
       for (int i = 0; i < settings.pixelCount; i++)
     {
-        RgbColor color(uniData[i * 3], uniData[i * 3 + 1], uniData[i * 3 + 2]);
+        RgbColor color(uniData[i * 3] * INT_LIMIT, uniData[i * 3 + 1] * INT_LIMIT, uniData[i * 3 + 2] * INT_LIMIT);
         if(i < settings.startPixel || i > settings.endPixel) {
             color = black;
           }
@@ -558,7 +558,7 @@ void sendWS() {
 void sendWS_addressed() {
   int k = 1;
   int addr = settings.address - 1;
-  RgbColor colorAddr(uniData[addr], uniData[addr + 1], uniData[addr + 2]);
+  RgbColor colorAddr(uniData[addr] * INT_LIMIT, uniData[addr + 1] * INT_LIMIT, uniData[addr + 2] * INT_LIMIT);
   //printf("addr: %d, unidata[addr]: %d\n", addr, uniData[addr]);
     for (int i = 0; i < settings.pixelCount; i++)
     {
